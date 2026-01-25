@@ -22,11 +22,24 @@ server-list:
     - " <white>• Dynamic Economy </white><green>(Anti-Inflation)"
     - " <white>• Procedural Dungeons </white><red>(New Floor!) "
     - "<gray>"
-    - "<aqua>Discord: <white>discord.gg/naturalsmp"
-    - "<light_purple>Store: <white>store.naturalsmp.id"
+    - "<aqua>Discord: <white>dc.naturalsmp.my.id"
+    - "<light_purple>Store: <white>store.naturalsmp.my.id"
 
 # Integration Settings
 integration:
   # Enable synergi with NaturalCore backend
   naturalcore-sync: true
   maintenance-mode: false
+
+# Maintenance Mode Display
+maintenance:
+  motd-line1: "<gradient:#FFAA00:#FFFF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <red>MAINTENANCE MODE"
+  motd-line2: "<gray>» <white>Server sedang dalam tahap perbaikan rutin."
+  kick-reason: |-
+    <gradient:#FFAA00:#FFFF55><bold>NATURAL SMP MAINTENANCE</bold></gradient>
+    
+    <gray>Server sedang dalam perbaikan.
+    <gray>Hanya staf yang diizinkan masuk.
+    
+    <gray>» <white>Selesai dalam beberapa saat lagi...
+    <gray>» <aqua>discord.gg/naturalsmp
