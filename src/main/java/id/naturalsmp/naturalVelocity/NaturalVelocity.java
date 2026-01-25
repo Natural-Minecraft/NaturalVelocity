@@ -14,6 +14,10 @@ import java.nio.file.Files;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.Set;
+import java.util.HashSet;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 
 @Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = { "NaturalSMP" })
 public class NaturalVelocity {
