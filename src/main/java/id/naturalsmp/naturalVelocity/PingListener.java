@@ -47,7 +47,14 @@ public class PingListener {
         ServerPing ping = event.getPing();
         ServerPing.Builder builder = ping.asBuilder();
         com.moandjiezana.toml.Toml config = plugin.getConfig();
-        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
+        
+                
+        // Use a builder that explicitly enables hex colors for modern client support
+        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = 
+            net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder()
+                .character('§')
+                .hexColors()
+                .build();
 
         if (plugin.isMaintenanceActive()) {
             // 1. Maintenance MOTD
@@ -57,7 +64,8 @@ public class PingListener {
                     "<gray>» <white>Server sedang dalam tahap perbaikan rutin.");
             builder.description(mm.deserialize(line1 + "\n" + line2));
 
-            // 2. Custom Player Count Text
+            // 2. Custom Player Count
+                             Text
             builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), "§cMAINTENANCE"));
 
             // 3. Hover (Optional different hover for maintenance)
