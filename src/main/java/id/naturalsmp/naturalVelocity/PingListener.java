@@ -14,9 +14,23 @@ public class PingListener {
 
     private final NaturalVelocity plugin;
     private final MiniMessage mm = MiniMessage.miniMessage();
+    private com.velocitypowered.api.util.Favicon cachedIcon;
 
     public PingListener(NaturalVelocity plugin) {
         this.plugin = plugin;
+        loadIcon();
+    }
+
+    private void loadIcon() {
+        java.io.File iconFile = new java.io.File(plugin.getDataDirectory().toFile(), "server-icon.png");
+        if (iconFile.exists()) {
+            try {
+                this.cachedIcon = id.naturalsmp.naturalvelocity.utils.IconResizer.createFavicon(iconFile);
+                plugin.getLogger().info("Successfully loaded and resized dynamic server icon! 🎨");
+            } catch (java.io.IOException e) {
+                plugin.getLogger().error("Failed to process server-icon.png: " + e.getMessage());
+            }
+        }
     }
 
     @Subscribe
@@ -27,20 +41,25 @@ public class PingListener {
 
         if (plugin.isMaintenanceActive()) {
             // 1. Maintenance MOTD
-            String line1 = config.getString("maintenance.motd-line1", "<gradient:#FFAA00:#FFFF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <red>MAINTENANCE MODE");
-            String line2 = config.getString("maintenance.motd-line2", "<gray>» <white>Server sedang dalam tahap perbaikan rutin.");
+            String line1 = config.getString("maintenance.motd-line1",
+                    "<gradient:#FFAA00:#FFFF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <red>MAINTENANCE MODE");
+            String line2 = config.getString("maintenance.motd-line2",
+                    "<gray>» <white>Server sedang dalam tahap perbaikan rutin.");
             builder.description(mm.deserialize(line1 + "\n" + line2));
 
             // 2. Custom Player Count Text
             builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), "§cMAINTENANCE"));
-            
+
             // 3. Hover (Optional different hover for maintenance)
             List<ServerPing.SamplePlayer> samples = new ArrayList<>();
-            samples.add(new ServerPing.SamplePlayer(mm.serialize(mm.deserialize("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")), UUID.randomUUID()));
+            samples.add(new ServerPing.SamplePlayer(
+                    mm.serialize(mm.deserialize("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
+                    UUID.randomUUID()));
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
         } else {
             // 1. Premium MOTD (Line 1 & 2)
-            String line1 = config.getString("motd.line1", "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
+            String line1 = config.getString("motd.line1",
+                    "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
             String line2 = config.getString("motd.line2", "<gray>» <white>The Most Immersive Experience");
             builder.description(mm.deserialize(line1 + "\n" + line2));
 
@@ -57,6 +76,10 @@ public class PingListener {
                 }
                 builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
             }
+        }
+
+        if (cachedIcon != null) {
+            builder.favicon(cachedIcon);
         }
 
         event.setPing(builder.build());

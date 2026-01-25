@@ -26,6 +26,7 @@ public class NaturalVelocity {
     private final Logger logger;
     private final Path dataDirectory;
     private Toml config;
+    private id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler messageHandler;
 
     @Inject
     public NaturalVelocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -39,6 +40,7 @@ public class NaturalVelocity {
         loadConfig();
         // Load maintenance state from config or separate file
         this.maintenanceActive = config.getBoolean("integration.maintenance-mode", false);
+        this.messageHandler = new id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler(this);
 
         logger.info("NaturalVelocity has been initialized! 🚀");
 
@@ -144,5 +146,13 @@ public class NaturalVelocity {
 
     public Logger getLogger() {
         return logger;
+    }
+
+    public Path getDataDirectory() {
+        return dataDirectory;
+    }
+
+    public id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler getMessageHandler() {
+        return messageHandler;
     }
 }
