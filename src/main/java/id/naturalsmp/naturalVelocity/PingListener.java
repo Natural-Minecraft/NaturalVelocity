@@ -22,9 +22,14 @@ public class PingListener {
     }
 
     private Component parse(String text) {
-        if (text == null) return Component.empty();
-        // Support &#RRGGBB by converting to MiniMessage <#RRGGBB>
+        if (text == null)
+            return Component.empty();
+        // 1. Support &#RRGGBB by converting to MiniMessage <#RRGGBB>
         String processed = text.replaceAll("&#([A-Fa-f0-9]{6})", "<#$1>");
+        // 2. Support legacy & codes by converting to MiniMessage tags if they are not
+        // already handled
+        // MiniMessage has a legacy section serializer but it's easier to just handle
+        // the common ones or use the legacy serializer first
         return mm.deserialize(processed);
     }
 
@@ -68,16 +73,15 @@ public class PingListener {
                     "<gradient:#FFAA00:#FFFF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <red>MAINTENANCE MODE");
             String line2 = config.getString("maintenance.motd-line2",
                     "<gray>» <white>Server sedang dalam tahap perbaikan rutin.");
-            builder.description(mm.deserialize(line1 + "\n" + line2));
+            builder.description(parse(line1 + "\n" + line2));
 
             // 2. Custom Player Count Text
-            builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), "§cMAINTENANCE"));
+            builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), "\u00A7cMAINTENANCE"));
 
             // 3. Hover (Optional different hover for maintenance)
             List<ServerPing.SamplePlayer> samples = new ArrayList<>();
             samples.add(new ServerPing.SamplePlayer(
-                    legacy.serialize(
-                            mm.deserialize("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
+                    legacy.serialize(parse("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
                     UUID.randomUUID()));
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
         } else {
@@ -85,18 +89,18 @@ public class PingListener {
             String line1 = config.getString("motd.line1",
                     "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
             String line2 = config.getString("motd.line2", "<gray>» <white>The Most Immersive Experience");
-            builder.description(mm.deserialize(line1 + "\n" + line2));
+            builder.description(parse(line1 + "\n" + line2));
 
             // 2. Custom Player Count Text
-            String versionText = config.getString("server-list.version-text", "NaturalSMP v1.9");
-            builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), versionText));
+            String versionText = config.getString("server-list.version-text", "NaturalSMP v1.21");
+            builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
 
             // 3. Player List Hover (Sample)
             List<String> hoverLines = config.getList("server-list.hover-lines");
             if (hoverLines != null && !hoverLines.isEmpty()) {
                 List<ServerPing.SamplePlayer> samples = new ArrayList<>();
                 for (String line : hoverLines) {
-                    samples.add(new ServerPing.SamplePlayer(legacy.serialize(mm.deserialize(line)), UUID.randomUUID()));
+                    samples.add(new ServerPing.SamplePlayer(legacy.serialize(parse(line)), UUID.randomUUID()));
                 }
                 builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
             }
