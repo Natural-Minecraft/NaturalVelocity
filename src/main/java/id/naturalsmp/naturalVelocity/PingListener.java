@@ -21,7 +21,7 @@ public class PingListener {
         loadIcon();
     }
 
-    private void loadIcon() {
+    public void loadIcon() {
         java.io.File iconFile = new java.io.File(plugin.getDataDirectory().toFile(), "server-icon.png");
         if (!iconFile.exists()) {
             iconFile = new java.io.File(plugin.getDataDirectory().toFile(), "server-icon.PNG");
@@ -47,11 +47,10 @@ public class PingListener {
         ServerPing ping = event.getPing();
         ServerPing.Builder builder = ping.asBuilder();
         com.moandjiezana.toml.Toml config = plugin.getConfig();
-        
-                
+
         // Use a builder that explicitly enables hex colors for modern client support
-        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = 
-            net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder()
+        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                .builder()
                 .character('§')
                 .hexColors()
                 .build();
@@ -70,7 +69,8 @@ public class PingListener {
             // 3. Hover (Optional different hover for maintenance)
             List<ServerPing.SamplePlayer> samples = new ArrayList<>();
             samples.add(new ServerPing.SamplePlayer(
-                    legacy.serialize(mm.deserialize("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
+                    legacy.serialize(
+                            mm.deserialize("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
                     UUID.randomUUID()));
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
         } else {

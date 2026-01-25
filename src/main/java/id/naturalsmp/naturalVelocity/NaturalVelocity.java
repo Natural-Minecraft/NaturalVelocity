@@ -27,6 +27,7 @@ public class NaturalVelocity {
     private final Path dataDirectory;
     private Toml config;
     private id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler messageHandler;
+    private PingListener pingListener;
 
     @Inject
     public NaturalVelocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -48,8 +49,25 @@ public class NaturalVelocity {
         server.getChannelRegistrar().register(IDENTIFIER);
 
         // Register Listeners
-        server.getEventManager().register(this, new PingListener(this));
+        this.pingListener = new PingListener(this);
+        server.getEventManager().register(this, pingListener);
         server.getEventManager().register(this, new MaintenanceListener(this));
+
+        // Register Command
+        com.velocitypowered.api.command.CommandManager cmdManager = server.getCommandManager();
+        com.velocitypowered.api.command.CommandMeta meta = cmdManager.metaBuilder("nvelocity")
+                .aliases("nv")
+                .plugin(this)
+                .build();
+        cmdManager.register(meta, new NaturalVelocityCommand(this));
+    }
+
+    public void reload() {
+        loadConfig();
+        if (pingListener != null) {
+            pingListener.loadIcon();
+        }
+        logger.info("NaturalVelocity configuration reloaded! 🔄");
     }
 
     @Subscribe
