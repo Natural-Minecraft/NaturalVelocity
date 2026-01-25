@@ -23,13 +23,22 @@ public class PingListener {
 
     private void loadIcon() {
         java.io.File iconFile = new java.io.File(plugin.getDataDirectory().toFile(), "server-icon.png");
+        if (!iconFile.exists()) {
+            iconFile = new java.io.File(plugin.getDataDirectory().toFile(), "server-icon.PNG");
+        }
+
         if (iconFile.exists()) {
             try {
                 this.cachedIcon = id.naturalsmp.naturalvelocity.utils.IconResizer.createFavicon(iconFile);
-                plugin.getLogger().info("Successfully loaded and resized dynamic server icon! 🎨");
+                plugin.getLogger().info(
+                        "Successfully loaded and resized dynamic server icon from: " + iconFile.getName() + " 🎨");
             } catch (java.io.IOException e) {
-                plugin.getLogger().error("Failed to process server-icon.png: " + e.getMessage());
+                plugin.getLogger().error("Failed to process " + iconFile.getName() + ": " + e.getMessage());
+                e.printStackTrace();
             }
+        } else {
+            plugin.getLogger().warn("Dynamic server-icon.png not found in " + plugin.getDataDirectory().toString()
+                    + ". Using default icon.");
         }
     }
 
@@ -38,6 +47,7 @@ public class PingListener {
         ServerPing ping = event.getPing();
         ServerPing.Builder builder = ping.asBuilder();
         com.moandjiezana.toml.Toml config = plugin.getConfig();
+        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
 
         if (plugin.isMaintenanceActive()) {
             // 1. Maintenance MOTD
@@ -53,7 +63,7 @@ public class PingListener {
             // 3. Hover (Optional different hover for maintenance)
             List<ServerPing.SamplePlayer> samples = new ArrayList<>();
             samples.add(new ServerPing.SamplePlayer(
-                    mm.serialize(mm.deserialize("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
+                    legacy.serialize(mm.deserialize("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
                     UUID.randomUUID()));
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
         } else {
@@ -72,7 +82,7 @@ public class PingListener {
             if (hoverLines != null && !hoverLines.isEmpty()) {
                 List<ServerPing.SamplePlayer> samples = new ArrayList<>();
                 for (String line : hoverLines) {
-                    samples.add(new ServerPing.SamplePlayer(mm.serialize(mm.deserialize(line)), UUID.randomUUID()));
+                    samples.add(new ServerPing.SamplePlayer(legacy.serialize(mm.deserialize(line)), UUID.randomUUID()));
                 }
                 builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
             }
