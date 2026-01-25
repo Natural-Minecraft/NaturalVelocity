@@ -1,0 +1,32 @@
+# ==========================================
+#      NATURAL VELOCITY - CONFIGURATION
+# ==========================================
+
+# Premium MOTD Settings
+# Use MiniMessage format (gradient, hex, tags)
+motd:
+  line1: "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <white>The Most Immersive Experience"
+  line2: "<gray>»</gray> <yellow>Join now to explore our custom 4 seasons! <gradient:#FFFF55:#FFAA00>NEW UPDATES!</gradient>"
+
+# Server List Customization
+server-list:
+  # Shown in place of player count (e.g., "NaturalSMP v1.9")
+  version-text: "NaturalSMP v1.9"
+  
+  # Hover Player List (Max 10-12 usually)
+  hover-lines:
+    - "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>"
+    - "<gray>----------------------"
+    - "<yellow>Core Features:"
+    - " <white>• Custom 4 Seasons </white><aqua>(Winter Active)"
+    - " <white>• Dynamic Economy </white><green>(Anti-Inflation)"
+    - " <white>• Procedural Dungeons </white><red>(New Floor!) "
+    - "<gray>"
+    - "<aqua>Discord: <white>discord.gg/naturalsmp"
+    - "<light_purple>Store: <white>store.naturalsmp.id"
+
+# Integration Settings
+integration:
+  # Enable synergi with NaturalCore backend
+  naturalcore-sync: true
+  maintenance-mode: false
