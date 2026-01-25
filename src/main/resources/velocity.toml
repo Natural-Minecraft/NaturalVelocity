@@ -11,7 +11,7 @@ line2 = "<gray>»</gray> <yellow>Join now to explore our custom 4 seasons! <grad
 # Server List Customization
 [server-list]
 # Shown in place of player count (e.g., "NaturalSMP v1.9")
-version-text = "NaturalSMP v1.9"
+version-text = "NaturalSMP v1.21"
 
 # Hover Player List (Max 10-12 usually)
 hover-lines = [

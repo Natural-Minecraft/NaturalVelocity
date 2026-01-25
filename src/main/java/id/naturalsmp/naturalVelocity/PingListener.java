@@ -21,6 +21,13 @@ public class PingListener {
         loadIcon();
     }
 
+    private Component parse(String text) {
+        if (text == null) return Component.empty();
+        // Support &#RRGGBB by converting to MiniMessage <#RRGGBB>
+        String processed = text.replaceAll("&#([A-Fa-f0-9]{6})", "<#$1>");
+        return mm.deserialize(processed);
+    }
+
     public void loadIcon() {
         java.io.File iconFile = new java.io.File(plugin.getDataDirectory().toFile(), "server-icon.png");
         if (!iconFile.exists()) {
