@@ -64,8 +64,7 @@ public class PingListener {
                     "<gray>» <white>Server sedang dalam tahap perbaikan rutin.");
             builder.description(mm.deserialize(line1 + "\n" + line2));
 
-            // 2. Custom Player Count
-                             Text
+            // 2. Custom Player Count Text
             builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), "§cMAINTENANCE"));
 
             // 3. Hover (Optional different hover for maintenance)
