@@ -3,27 +3,28 @@
 # ==========================================
 
 # Premium MOTD Settings
-# Use MiniMessage format (gradient, hex, tags)
+# Use &#RRGGBB for hex colors (e.g. &#00AAFF) or MiniMessage tags
 [motd]
-line1 = "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <white>The Most Immersive Experience"
-line2 = "<gray>»</gray> <yellow>Join now to explore our custom 4 seasons! <gradient:#FFFF55:#FFAA00>NEW UPDATES!</gradient>"
+line1 = "&#00AAFF&lNATURAL SMP &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
+line2 = "&#AAAAAA» &#FFFF55Join now to explore our custom 4 seasons! &#FFAA00NEW UPDATES!"
 
 # Server List Customization
 [server-list]
-# Shown in place of player count (e.g., "NaturalSMP v1.9")
-version-text = "NaturalSMP v1.21"
+# Shown in place of player count (e.g., "NaturalSMP v1.21")
+version-text = "&#00AAFFNaturalSMP v1.21"
 
 # Hover Player List (Max 10-12 usually)
+# Note: Gradients are discouraged in hover due to character limits
 hover-lines = [
-    "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>",
-    "<gray>----------------------",
-    "<yellow>Core Features:",
-    " <white>• Custom 4 Seasons </white><aqua>(Winter Active)",
-    " <white>• Dynamic Economy </white><green>(Anti-Inflation)",
-    " <white>• Procedural Dungeons </white><red>(New Floor!) ",
-    "<gray>",
-    "<aqua>Discord: <white>dc.naturalsmp.my.id",
-    "<light_purple>Store: <white>store.naturalsmp.my.id"
+    "&#00AAFF&lNATURAL SMP",
+    "&#AAAAAA----------------------",
+    "&#FFFF55Core Features:",
+    " &#FFFFFF• Custom 4 Seasons &#55FFFF(Winter Active)",
+    " &#FFFFFF• Dynamic Economy &#55FF55(Anti-Inflation)",
+    " &#FFFFFF• Procedural Dungeons &#FF5555(New Floor!) ",
+    "&#AAAAAA",
+    "&#55FFFFDiscord: &#FFFFFFdc.naturalsmp.my.id",
+    "&#FF55FFStore: &#FFFFFFstore.naturalsmp.my.id"
 ]
 
 # Integration Settings
@@ -34,14 +35,14 @@ maintenance-mode = false
 
 # Maintenance Mode Display
 [maintenance]
-motd-line1 = "<gradient:#FFAA00:#FFFF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <red>MAINTENANCE MODE"
-motd-line2 = "<gray>» <white>Server sedang dalam tahap perbaikan rutin."
+motd-line1 = "&#FFAA00&lNATURAL SMP &#AAAAAA• &#FF5555MAINTENANCE MODE"
+motd-line2 = "&#AAAAAA» &#FFFFFFServer sedang dalam tahap perbaikan rutin."
 kick-reason = """
-<gradient:#FFAA00:#FFFF55><bold>NATURAL SMP MAINTENANCE</bold></gradient>
+&#FFAA00&lNATURAL SMP MAINTENANCE
 
-<gray>Server sedang dalam perbaikan.
-<gray>Hanya staf yang diizinkan masuk.
+&#AAAAAAServer sedang dalam perbaikan.
+&#AAAAAAHanya staf yang diizinkan masuk.
 
-<gray>» <white>Selesai dalam beberapa saat lagi...
-<gray>» <aqua>dc.naturalsmp.my.id
+&#AAAAAA» &#FFFFFFSelesai dalam beberapa saat lagi...
+&#AAAAAA» &#55FFFFdc.naturalsmp.my.id
 """
