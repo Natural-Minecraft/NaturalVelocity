@@ -5,7 +5,8 @@
 # Premium MOTD Settings
 # Use &#RRGGBB for hex colors (e.g. &#00AAFF) or MiniMessage tags
 [motd]
-line1 = "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP: REBORN</bold></gradient> &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
+line1 = "&#00FFFF&lɴ&#00FFF7&lᴀ&#00FFEF&lᴛ&#00FFE8&lᴜ&#00FFE0&lʀ&#00FFD8&lᴀ&#00FFD0&lʟ
+      &#31FFA2&lꜱ&#4AFF8B&lᴍ&#63FF74&lᴘ&#7CFF5D&l: &#ADFF2F&lʀ&#ADFF2F&lᴇ&#ADFF2F&lʙ&#ADFF2F&lᴏ&#ADFF2F&lʀ&#ADFF2F&lɴ &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
 line2 = "&#AAAAAA» &#FFFF55Join now to explore our custom 4 seasons! &#FFAA00NEW UPDATES!"
 
 # Server List Customization
@@ -16,7 +17,8 @@ version-text = "&#00AAFFNaturalSMP v1.21"
 # Hover Player List (Max 10-12 usually)
 # Note: Gradients are discouraged in hover due to character limits
 hover-lines = [
-    "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP: REBORN</bold></gradient>",
+    "&#00FFFF&lɴ&#00FFF7&lᴀ&#00FFEF&lᴛ&#00FFE8&lᴜ&#00FFE0&lʀ&#00FFD8&lᴀ&#00FFD0&lʟ
+      &#31FFA2&lꜱ&#4AFF8B&lᴍ&#63FF74&lᴘ&#7CFF5D&l: &#ADFF2F&lʀ&#ADFF2F&lᴇ&#ADFF2F&lʙ&#ADFF2F&lᴏ&#ADFF2F&lʀ&#ADFF2F&lɴ",
     "&#AAAAAA----------------------",
     "&#FFFF55Core Features:",
     " &#FFFFFF• Custom 4 Seasons &#55FFFF(Winter Active)",
