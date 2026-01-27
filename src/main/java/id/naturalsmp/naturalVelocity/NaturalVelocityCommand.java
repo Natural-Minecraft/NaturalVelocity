@@ -1,7 +1,6 @@
 package id.naturalsmp.naturalvelocity;
 
 import com.velocitypowered.api.command.SimpleCommand;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import java.util.Arrays;
 import java.util.List;

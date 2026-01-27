@@ -109,21 +109,21 @@ public class NaturalVelocity {
         File file = new File(dataDirectory.toFile(), "velocity.toml");
         try {
             // Read current file content
-            String content = new String(Files.readAllBytes(file.toPath()));
+            String content = new String(Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
 
-            // Simple replace for persistence (avoid over-complicating with full TOML writer
-            // if possible)
-            String target = "maintenance-mode = " + (!maintenanceActive);
-            String replacement = "maintenance-mode = " + maintenanceActive;
+            // Robust Regex replace
+            // Replaces "maintenance-mode = true/false" with new value, preserving
+            // whitespace
+            String regex = "(maintenance-mode\\s*=\\s*)(true|false)";
+            String replacement = "$1" + maintenanceActive;
 
-            if (content.contains(target)) {
-                content = content.replace(target, replacement);
+            String newContent = content.replaceAll(regex, replacement);
+
+            if (!content.equals(newContent)) {
+                Files.write(file.toPath(), newContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             } else {
-                // If not found, we might need a more robust approach or just log it
-                logger.warn("Could not find maintenance-mode key in velocity.toml for persistent save.");
+                logger.warn("Could not find/update 'maintenance-mode' key in velocity.toml");
             }
-
-            Files.write(file.toPath(), content.getBytes());
         } catch (IOException e) {
             logger.error("Failed to save maintenance state!", e);
         }
