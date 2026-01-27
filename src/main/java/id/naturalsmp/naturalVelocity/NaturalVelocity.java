@@ -18,6 +18,9 @@ import java.util.Set;
 import java.util.HashSet;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 @Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = { "NaturalSMP" })
 public class NaturalVelocity {
@@ -139,9 +142,9 @@ public class NaturalVelocity {
 
         try {
             String content = new String(Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
-            com.google.gson.JsonArray array = com.google.gson.JsonParser.parseString(content).getAsJsonArray();
+            JsonArray array = JsonParser.parseString(content).getAsJsonArray();
             this.whitelistedPlayers.clear();
-            for (com.google.gson.JsonElement el : array) {
+            for (JsonElement el : array) {
                 this.whitelistedPlayers.add(el.getAsString().toLowerCase());
             }
         } catch (Exception e) {
@@ -152,7 +155,7 @@ public class NaturalVelocity {
     private void saveWhitelist() {
         File file = new File(dataDirectory.toFile(), "whitelist.json");
         try {
-            com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+            JsonArray array = new JsonArray();
             for (String p : whitelistedPlayers) {
                 array.add(p);
             }
