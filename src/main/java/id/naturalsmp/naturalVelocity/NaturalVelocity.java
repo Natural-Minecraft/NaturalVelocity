@@ -43,6 +43,7 @@ public class NaturalVelocity {
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
         loadConfig();
+        loadWhitelist(); // Persistent whitelist
         // Load maintenance state from config or separate file
         this.maintenanceActive = config.getBoolean("integration.maintenance-mode", false);
         this.messageHandler = new id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler(this);
@@ -68,6 +69,7 @@ public class NaturalVelocity {
 
     public void reload() {
         loadConfig();
+        loadWhitelist();
         if (pingListener != null) {
             pingListener.loadIcon();
         }
@@ -99,6 +101,7 @@ public class NaturalVelocity {
 
                 // Persistence
                 saveMaintenanceState();
+                saveWhitelist();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -126,6 +129,36 @@ public class NaturalVelocity {
             }
         } catch (IOException e) {
             logger.error("Failed to save maintenance state!", e);
+        }
+    }
+
+    private void loadWhitelist() {
+        File file = new File(dataDirectory.toFile(), "whitelist.json");
+        if (!file.exists())
+            return;
+
+        try {
+            String content = new String(Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+            com.google.gson.JsonArray array = com.google.gson.JsonParser.parseString(content).getAsJsonArray();
+            this.whitelistedPlayers.clear();
+            for (com.google.gson.JsonElement el : array) {
+                this.whitelistedPlayers.add(el.getAsString().toLowerCase());
+            }
+        } catch (Exception e) {
+            logger.error("Failed to load whitelist.json!", e);
+        }
+    }
+
+    private void saveWhitelist() {
+        File file = new File(dataDirectory.toFile(), "whitelist.json");
+        try {
+            com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+            for (String p : whitelistedPlayers) {
+                array.add(p);
+            }
+            Files.write(file.toPath(), array.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            logger.error("Failed to save whitelist.json!", e);
         }
     }
 
