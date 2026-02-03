@@ -31,7 +31,7 @@ hover-lines = [
 [integration]
 # Enable synergi with NaturalCore backend
 naturalcore-sync = true
-maintenance-mode = false
+maintenance-mode = true
 
 # Maintenance Mode Display
 [maintenance]
