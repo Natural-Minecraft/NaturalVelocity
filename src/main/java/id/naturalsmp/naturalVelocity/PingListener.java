@@ -101,12 +101,10 @@ public class PingListener {
         ServerPing.Builder builder = ping.asBuilder();
         com.moandjiezana.toml.Toml config = plugin.getConfig();
 
-        // Use a builder that explicitly enables hex colors for modern client support
+        // Use standard legacy serializer to prevent "§x..." weirdness in older clients
+        // or hover text
         net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-                .builder()
-                .character('§')
-                .hexColors()
-                .build();
+                .legacySection();
 
         if (plugin.isMaintenanceActive()) {
             // 1. Maintenance MOTD
