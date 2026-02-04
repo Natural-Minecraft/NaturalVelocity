@@ -24,12 +24,53 @@ public class PingListener {
     private Component parse(String text) {
         if (text == null)
             return Component.empty();
-        // 1. Support &#RRGGBB by converting to MiniMessage <#RRGGBB>
+
+        // 1. Convert &#RRGGBB to <#RRGGBB> (MiniMessage Hex)
         String processed = text.replaceAll("&#([A-Fa-f0-9]{6})", "<#$1>");
-        // 2. Support legacy & codes by converting to MiniMessage tags if they are not
-        // already handled
-        // MiniMessage has a legacy section serializer but it's easier to just handle
-        // the common ones or use the legacy serializer first
+
+        // 2. Convert standard Legacy & codes to MiniMessage tags or handle them
+        // Simplest way for mixed content:
+        // If it contains <gradient> or <# (hex), treat as MiniMessage.
+        // If it contains ONLY &, treating as Legacy is safer.
+        // But for gradients + & legacy, we need mixed handling.
+
+        // Strategy: Convert & -> §, then use LegacySection serializer to deserialize
+        // basic codes,
+        // BUT Logic issue: LegacySection deserializer DOES NOT support MiniMessage
+        // tags.
+
+        // Correct Strategy:
+        // Use MiniMessage for everything. Convert legacy &x to <color>.
+        // Replace &([0-9a-f]) with <$1> ? No, mapped colors.
+
+        // Easier: Just replace & with § and let the final serialization handle it?
+        // No, MiniMessage ignores §.
+
+        // Final Robust Strategy:
+        // Convert legacy & codes to MiniMessage tags manually before parsing.
+        processed = processed
+                .replace("&0", "<black>")
+                .replace("&1", "<dark_blue>")
+                .replace("&2", "<dark_green>")
+                .replace("&3", "<dark_aqua>")
+                .replace("&4", "<dark_red>")
+                .replace("&5", "<dark_purple>")
+                .replace("&6", "<gold>")
+                .replace("&7", "<gray>")
+                .replace("&8", "<dark_gray>")
+                .replace("&9", "<blue>")
+                .replace("&a", "<green>")
+                .replace("&b", "<aqua>")
+                .replace("&c", "<red>")
+                .replace("&d", "<light_purple>")
+                .replace("&e", "<yellow>")
+                .replace("&f", "<white>")
+                .replace("&l", "<bold>")
+                .replace("&m", "<strikethrough>")
+                .replace("&n", "<underlined>")
+                .replace("&o", "<italic>")
+                .replace("&r", "<reset>");
+
         return mm.deserialize(processed);
     }
 
@@ -70,7 +111,7 @@ public class PingListener {
         if (plugin.isMaintenanceActive()) {
             // 1. Maintenance MOTD
             String line1 = config.getString("maintenance.motd-line1",
-                    "<gradient:#FFAA00:#FFFF55><bold>NATURAL SMP</bold></gradient> <gray>•</gray> <red>MAINTENANCE MODE");
+                    "<gradient:#FF0000:#FF8800><bold>MAINTENANCE MODE</bold></gradient>    <gray>•</gray> <white>Natural SMP");
             String line2 = config.getString("maintenance.motd-line2",
                     "<gray>» <white>Server sedang dalam tahap perbaikan rutin.");
             builder.description(parse(line1 + "\n" + line2));
@@ -93,7 +134,8 @@ public class PingListener {
 
             // 2. Custom Player Count Text
             String versionText = config.getString("server-list.version-text", "NaturalSMP v1.21");
-            builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
+            builder.version(
+                    new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
 
             // 3. Player List Hover (Sample)
             List<String> hoverLines = config.getList("server-list.hover-lines");
