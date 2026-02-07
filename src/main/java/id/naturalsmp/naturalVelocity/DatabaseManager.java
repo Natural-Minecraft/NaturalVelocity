@@ -31,7 +31,7 @@ public class DatabaseManager {
         var config = plugin.getConfig();
         this.enabled = config.getBoolean("database.enabled", false);
         this.host = config.getString("database.host", "localhost");
-        this.port = config.getInt("database.port", 3306);
+        this.port = config.getLong("database.port", 3306L).intValue();
         this.database = config.getString("database.database", "naturalsmp_core");
         this.username = config.getString("database.username", "root");
         this.password = config.getString("database.password", "");
