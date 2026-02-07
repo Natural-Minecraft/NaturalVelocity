@@ -21,6 +21,9 @@ import java.io.DataInputStream;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 @Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = { "NaturalSMP" })
 public class NaturalVelocity {
@@ -266,5 +269,19 @@ public class NaturalVelocity {
             }
 
         }).repeat(10, java.util.concurrent.TimeUnit.SECONDS).schedule();
+    }
+
+    public Component parse(String text) {
+        if (text == null)
+            return Component.empty();
+        // 1. Support &#RRGGBB by converting to MiniMessage <#RRGGBB>
+        String processed = text.replaceAll("&#([A-Fa-f0-9]{6})", "<#$1>");
+        // 2. Support legacy & codes
+        processed = processed.replace("&", "§");
+
+        if (processed.contains("§")) {
+            return LegacyComponentSerializer.legacySection().deserialize(processed);
+        }
+        return MiniMessage.miniMessage().deserialize(processed);
     }
 }
