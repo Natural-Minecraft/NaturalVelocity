@@ -49,11 +49,10 @@ password = ""
 motd-line1 = "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"
 motd-line2 = "&#AAAAAA» &#FFFFFFServer sedang dalam tahap perbaikan rutin."
 kick-reason = """
-<b><gradient:#FF0000:#FF8800>NATURAL SMP MAINTENANCE</gradient></b>
+<gradient:#FFAA00:#FFFF55><b>NATURAL SMP</b></gradient> <dark_gray>┃</dark_gray> <yellow><b>MAINTENANCE</b></yellow>
 
-&#AAAAAAServer sedang dalam perbaikan.
-&#AAAAAAHanya staf yang diizinkan masuk.
+<gray>Server sedang dalam tahap perbaikan atau update rutin.
+Hanya staf yang diizinkan masuk untuk saat ini.</gray>
 
-&#AAAAAA» &#FFFFFFSelesai dalam beberapa saat lagi...
-&#AAAAAA» &#55FFFFdc.naturalsmp.my.id
+<dark_gray>» <aqua>dc.naturalsmp.my.id</aqua></dark_gray>
 """
