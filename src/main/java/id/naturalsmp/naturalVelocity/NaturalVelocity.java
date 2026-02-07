@@ -229,19 +229,42 @@ public class NaturalVelocity {
                 return;
 
             boolean active = databaseManager.getMaintenanceActive();
-            if (active != this.maintenanceActive) {
-                this.maintenanceActive = active;
-                logger.info("[CoreDB] Maintenance Mode updated via MySQL to: " + (active ? "ON" : "OFF"));
+            boolean stateChanged = (active != this.maintenanceActive);
+
+            if (active) {
+                // Fetch latest whitelist
+                java.util.List<String> whitelist = databaseManager.getMaintenanceWhitelist();
+                java.util.Set<String> newWhitelist = new java.util.HashSet<>(whitelist);
+
+                if (!newWhitelist.equals(this.whitelistedPlayers)) {
+                    this.whitelistedPlayers.clear();
+                    this.whitelistedPlayers.addAll(newWhitelist);
+                    logger.info("[CoreDB] Maintenance Whitelist updated via MySQL. Size: " + whitelistedPlayers.size());
+                    saveWhitelist();
+                }
+
+                if (stateChanged) {
+                    this.maintenanceActive = true;
+                    logger.info("[CoreDB] Maintenance Mode ENABLED via MySQL.");
+                    saveMaintenanceState();
+                }
+
+                // Kick online players who are not whitelisted and don't have bypass
+                for (com.velocitypowered.api.proxy.Player player : server.getAllPlayers()) {
+                    if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                        continue;
+                    if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
+                        continue;
+
+                    String kickReason = config.getString("maintenance.kick-reason");
+                    player.disconnect(parse(kickReason));
+                }
+            } else if (stateChanged) {
+                this.maintenanceActive = false;
+                logger.info("[CoreDB] Maintenance Mode DISABLED via MySQL.");
                 saveMaintenanceState();
             }
 
-            java.util.List<String> whitelist = databaseManager.getMaintenanceWhitelist();
-            if (!whitelist.isEmpty() && !new java.util.HashSet<>(whitelist).equals(this.whitelistedPlayers)) {
-                this.whitelistedPlayers.clear();
-                this.whitelistedPlayers.addAll(whitelist);
-                logger.info("[CoreDB] Maintenance Whitelist updated via MySQL. Size: " + whitelist.size());
-                saveWhitelist();
-            }
         }).repeat(10, java.util.concurrent.TimeUnit.SECONDS).schedule();
     }
 }
