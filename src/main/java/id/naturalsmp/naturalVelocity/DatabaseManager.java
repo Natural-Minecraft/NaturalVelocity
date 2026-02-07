@@ -50,6 +50,9 @@ public class DatabaseManager {
                 return true;
             }
 
+            // Explicitly load driver for shaded environments
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
             String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&autoReconnect=true";
             connection = DriverManager.getConnection(url, username, password);
             return true;
