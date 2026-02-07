@@ -51,7 +51,12 @@ public class DatabaseManager {
             }
 
             // Explicitly load driver for shaded environments
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+            } catch (ClassNotFoundException e) {
+                logger.error("[CoreDB] MySQL Driver not found! Ensure it is shaded correctly.");
+                return false;
+            }
 
             String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&autoReconnect=true";
             connection = DriverManager.getConnection(url, username, password);
