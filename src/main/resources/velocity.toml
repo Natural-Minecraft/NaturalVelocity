@@ -33,6 +33,17 @@ hover-lines = [
 naturalcore-sync = true
 maintenance-mode = true
 
+# ==========================================
+#          CORE DATABASE (MySQL)
+# ==========================================
+[database]
+enabled = false
+host = "localhost"
+port = 3306
+database = "naturalsmp_core"
+username = "root"
+password = ""
+
 # Maintenance Mode Display
 [maintenance]
 motd-line1 = "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"

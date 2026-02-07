@@ -35,6 +35,7 @@ public class NaturalVelocity {
     private Toml config;
     private id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler messageHandler;
     private PingListener pingListener;
+    private DatabaseManager databaseManager;
 
     @Inject
     public NaturalVelocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -47,6 +48,14 @@ public class NaturalVelocity {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         loadConfig();
         loadWhitelist(); // Persistent whitelist
+
+        // Initialize Database
+        this.databaseManager = new DatabaseManager(this, logger);
+        if (databaseManager.isEnabled()) {
+            databaseManager.connect();
+            startDatabasePolling();
+        }
+
         // Load maintenance state from config or separate file
         this.maintenanceActive = config.getBoolean("integration.maintenance-mode", false);
         this.messageHandler = new id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler(this);
@@ -212,5 +221,27 @@ public class NaturalVelocity {
 
     public id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler getMessageHandler() {
         return messageHandler;
+    }
+
+    private void startDatabasePolling() {
+        server.getScheduler().buildTask(this, () -> {
+            if (!databaseManager.isEnabled())
+                return;
+
+            boolean active = databaseManager.getMaintenanceActive();
+            if (active != this.maintenanceActive) {
+                this.maintenanceActive = active;
+                logger.info("[CoreDB] Maintenance Mode updated via MySQL to: " + (active ? "ON" : "OFF"));
+                saveMaintenanceState();
+            }
+
+            java.util.List<String> whitelist = databaseManager.getMaintenanceWhitelist();
+            if (!whitelist.isEmpty() && !new java.util.HashSet<>(whitelist).equals(this.whitelistedPlayers)) {
+                this.whitelistedPlayers.clear();
+                this.whitelistedPlayers.addAll(whitelist);
+                logger.info("[CoreDB] Maintenance Whitelist updated via MySQL. Size: " + whitelist.size());
+                saveWhitelist();
+            }
+        }).repeat(10, java.util.concurrent.TimeUnit.SECONDS).schedule();
     }
 }
