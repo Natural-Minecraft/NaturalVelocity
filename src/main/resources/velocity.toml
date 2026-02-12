@@ -23,8 +23,8 @@ hover-lines = [
     " &#FFFFFF• Dynamic Economy &#55FF55(Anti-Inflation)",
     " &#FFFFFF• Procedural Dungeons &#FF5555(New Floor!) ",
     "&#AAAAAA",
-    "&#55FFFFDiscord: &#FFFFFFdc.naturalsmp.my.id",
-    "&#FF55FFStore: &#FFFFFFstore.naturalsmp.my.id"
+    "&#55FFFFDiscord: &#FFFFFFdc.naturalsmp.net",
+    "&#FF55FFStore: &#FFFFFFstore.naturalsmp.net"
 ]
 
 # Integration Settings
@@ -54,5 +54,5 @@ kick-reason = """
 <gray>Server sedang dalam tahap perbaikan atau update rutin.
 Hanya staf yang diizinkan masuk untuk saat ini.</gray>
 
-<dark_gray>» <aqua>dc.naturalsmp.my.id</aqua></dark_gray>
+<dark_gray>» <aqua>dc.naturalsmp.net</aqua></dark_gray>
 """
