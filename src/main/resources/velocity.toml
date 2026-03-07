@@ -5,8 +5,8 @@
 # Premium MOTD Settings
 # Use &#RRGGBB for hex colors (e.g. &#00AAFF) or MiniMessage tags
 [motd]
-line1 = "<b><gradient:#00FF5A:#3BAFFF>█▀▄ █ ▄▀▀▄ ▀█▀ █  █ █▀▀▄ ▄▀▀▄ █   </gradient></b> <dark_gray>┃</dark_gray> <green><b>SURVIVAL</b></green> <gray>•</gray> <white>1.21.x"
-line2 = "<b><gradient:#00FF5A:#3BAFFF>█ ▀▄█ █▀▀█  █  █▄▄█ █▀▄  █▀▀█ █▄▄▄</gradient></b> <dark_gray>┃</dark_gray> <gray>» The Most Immersive Experience</gray>"
+line1 = "<b><#00FF5A>█<#01FC5F>▄ <#05F76A>█ <#09F175>▄<#0BEF7B>▀<#0DEC80>▀<#0FE986>▄ <#13E491>▀<#15E196>█<#17DF9C>▀ <#1BD9A7>█ <#1FD4B2>█ <#23CFBD>█<#25CCC2>▀<#27C9C8>▀<#29C7CD>▄ <#2DC1D8>▄<#2FBFDE>▀<#31BCE3>▀<#33B9E9>▄ <#37B4F4>█  </b> <dark_gray>┃</dark_gray> <green><b>SURVIVAL</b></green> <gray>•</gray> <white>1.21.x"
+line2 = "<b><#00FF5A>█ <#03F965>▀<#05F76A>█ <#09F175>█<#0BEF7B>▀<#0DEC80>▀<#0FE986>█  <#15E196>█  <#1BD9A7>█<#1DD7AC>▄<#1FD4B2>█ <#23CFBD>█<#25CCC2>▀<#27C9C8>▀<#29C7CD>▄ <#2DC1D8>█<#2FBFDE>▀<#31BCE3>▀<#33B9E9>█ <#37B4F4>█<#39B1F9>▄<#3BAFFF>▄</b> <dark_gray>┃</dark_gray> <gray>» The Most Immersive Experience</gray>"
 
 # Server List Customization
 [server-list]
