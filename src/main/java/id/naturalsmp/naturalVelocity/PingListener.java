@@ -210,15 +210,15 @@ public class PingListener {
                                 plugin.getLogger().info(
                                         "Netty Injector intercepted outbound packet: " + msg.getClass().getName());
 
-                                if (msg.getClass().getSimpleName().equals("StatusResponse")
-                                        || msg.getClass().getSimpleName().contains("Status")) {
-                                    plugin.getLogger()
-                                            .info("Netty Injector found Status packet: " + msg.getClass().getName());
+                                if (msg.getClass().getSimpleName().equals("StatusResponsePacket")) {
                                     try {
                                         Field statusField = msg.getClass().getDeclaredField("status");
                                         statusField.setAccessible(true);
-                                        String json = (String) statusField.get(msg);
-                                        plugin.getLogger().info("Netty Injector ORIGINAL JSON: " + json);
+
+                                        // Velocity 3.3.0+ uses a StringBuilder for the status JSON to reduce
+                                        // allocations!
+                                        StringBuilder sb = (StringBuilder) statusField.get(msg);
+                                        String json = sb.toString();
 
                                         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
                                         JsonObject newDesc = new JsonObject();
@@ -226,7 +226,10 @@ public class PingListener {
                                         newDesc.addProperty("text", "");
                                         root.add("description", newDesc);
 
-                                        statusField.set(msg, root.toString());
+                                        // Write back into the StringBuilder
+                                        sb.setLength(0);
+                                        sb.append(root.toString());
+
                                     } catch (Exception ex) {
                                         plugin.getLogger()
                                                 .error("Error modifying StatusResponse JSON: " + ex.getMessage());
