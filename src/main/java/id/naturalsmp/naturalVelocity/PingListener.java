@@ -9,7 +9,15 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
 public class PingListener {
@@ -132,27 +140,10 @@ public class PingListener {
                         : null;
 
                 if (motdCache != null && motdCache.size() > 0) {
-                    // Reconstruct into a TextComponent wrapper via GsonComponentSerializer
-                    com.google.gson.JsonObject description = new com.google.gson.JsonObject();
-                    description.addProperty("color", "white");
-                    description.add("extra", motdCache);
-                    description.addProperty("text", "");
-
-                    try {
-                        Component headMotdComponent = GsonComponentSerializer.gson()
-                                .deserialize(description.toString());
-                        builder.description(headMotdComponent);
-                    } catch (Exception e) {
-                        plugin.getLogger().error("Failed to parse Head MOTD JSON: " + e.getMessage());
-
-                        // Fallback to text MOTD
-                        List<String> fallback = config.getList("head-motd.fallback-motd");
-                        if (fallback != null && !fallback.isEmpty()) {
-                            String f1 = fallback.get(0);
-                            String f2 = fallback.size() > 1 ? fallback.get(1) : "";
-                            builder.description(parse(f1 + "\n" + f2));
-                        }
-                    }
+                    // Try to inject our custom MOTD JSON directly into the pipeline!
+                    injectNettyHandler(event.getConnection(), motdCache);
+                    builder.description(Component.empty()); // Leave empty, our pipeline handler will inject the real
+                                                            // JSON!
                 } else {
                     List<String> fallback = config.getList("head-motd.fallback-motd");
                     if (fallback != null && !fallback.isEmpty()) {
@@ -176,8 +167,8 @@ public class PingListener {
             // 3. Player List Hover (Sample)
             boolean alwaysPlusOne = config.getBoolean("head-motd.always-plus-one", false);
             int onlineCount = ping.getPlayers().isPresent() ? ping.getPlayers().get().getOnline() : 0;
-            int maxCount = alwaysPlusOne ? onlineCount + 1
-                    : (ping.getPlayers().isPresent() ? ping.getPlayers().get().getMax() : 0);
+            long configuredMax = config.getLong("head-motd.max-players", 69L);
+            int maxCount = alwaysPlusOne ? onlineCount + 1 : (int) configuredMax;
 
             List<ServerPing.SamplePlayer> samples = new ArrayList<>();
             List<String> hoverLines = config.getList("server-list.hover-lines");
@@ -197,5 +188,48 @@ public class PingListener {
         }
 
         event.setPing(builder.build());
+    }
+
+    private void injectNettyHandler(Object connection, JsonArray motdCache) {
+        try {
+            // Get underlying MinecraftConnection from InitialInboundConnection
+            Method getConnectionMethod = connection.getClass().getMethod("getConnection");
+            Object mcConnection = getConnectionMethod.invoke(connection);
+
+            // Get Netty Channel
+            Method getChannelMethod = mcConnection.getClass().getMethod("getChannel");
+            Channel channel = (Channel) getChannelMethod.invoke(mcConnection);
+
+            if (channel.pipeline().get("natural_motd_injector") == null) {
+                channel.pipeline().addBefore("minecraft-encoder", "natural_motd_injector",
+                        new ChannelOutboundHandlerAdapter() {
+                            @Override
+                            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
+                                    throws Exception {
+                                if (msg.getClass().getSimpleName().equals("StatusResponse")) {
+                                    try {
+                                        Field statusField = msg.getClass().getDeclaredField("status");
+                                        statusField.setAccessible(true);
+                                        String json = (String) statusField.get(msg);
+
+                                        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+                                        JsonObject newDesc = new JsonObject();
+                                        newDesc.add("extra", motdCache);
+                                        newDesc.addProperty("text", "");
+                                        root.add("description", newDesc);
+
+                                        statusField.set(msg, root.toString());
+                                    } catch (Exception ex) {
+                                        plugin.getLogger()
+                                                .error("Error modifying StatusResponse JSON: " + ex.getMessage());
+                                    }
+                                }
+                                super.write(ctx, msg, promise);
+                            }
+                        });
+            }
+        } catch (Exception e) {
+            // Silently fail if reflection fails or unsupported protocol layer
+        }
     }
 }

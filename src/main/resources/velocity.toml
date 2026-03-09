@@ -73,7 +73,10 @@ mineskin-api-key = ""
 image-file = "motd.png"
 
 # Automatically add +1 to max players online
-always-plus-one = true
+always-plus-one = false
+
+# Custom static max player count (used if always-plus-one is false)
+max-players = 69
 
 # Disable for Bedrock players natively to prevent visual glitches
 ignore-bedrock = true
