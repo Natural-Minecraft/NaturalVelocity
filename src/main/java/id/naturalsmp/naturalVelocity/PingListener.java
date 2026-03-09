@@ -207,31 +207,25 @@ public class PingListener {
                             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
                                     throws Exception {
 
-                                plugin.getLogger().info(
-                                        "Netty Injector intercepted outbound packet: " + msg.getClass().getName());
-
                                 if (msg.getClass().getSimpleName().equals("StatusResponsePacket")) {
                                     try {
                                         Field statusField = msg.getClass().getDeclaredField("status");
                                         statusField.setAccessible(true);
 
-                                        // Velocity 3.3.0+ uses a StringBuilder for the status JSON to reduce
-                                        // allocations!
                                         StringBuilder sb = (StringBuilder) statusField.get(msg);
                                         String json = sb.toString();
 
                                         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+
+                                        // Flatten the description structure
                                         JsonObject newDesc = new JsonObject();
-                                        newDesc.add("extra", motdCache);
                                         newDesc.addProperty("text", "");
+                                        newDesc.add("extra", motdCache);
+
                                         root.add("description", newDesc);
 
-                                        // Write back into the StringBuilder
-                                        String finalJson = root.toString();
                                         sb.setLength(0);
-                                        sb.append(finalJson);
-
-                                        plugin.getLogger().info("SUCCESSFULLY INJECTED MOTD JSON: " + finalJson);
+                                        sb.append(root.toString());
 
                                     } catch (Exception ex) {
                                         plugin.getLogger()
