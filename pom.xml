@@ -187,8 +187,8 @@
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
         <repository>
-            <id>retrooper-repo</id>
-            <url>https://repo.retrooper.com/releases</url>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.io/repository/maven-releases/</url>
         </repository>
     </repositories>
 
@@ -196,7 +196,7 @@
         <dependency>
             <groupId>com.github.retrooper</groupId>
             <artifactId>packetevents-velocity</artifactId>
-            <version>2.6.0</version>
+            <version>2.11.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
