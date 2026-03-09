@@ -47,6 +47,15 @@ password = ""
 [maintenance]
 motd-line1 = "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"
 motd-line2 = "&#AAAAAA» &#FFFFFFServer sedang dalam tahap perbaikan rutin."
+kick-reason = """
+<b><gradient:#FF0000:#FF8800>NATURAL SMP MAINTENANCE</gradient></b>
+
+&#AAAAAAServer sedang dalam perbaikan.
+&#AAAAAAHanya staf yang diizinkan masuk.
+
+&#AAAAAA» &#FFFFFFSelesai dalam beberapa saat lagi...
+&#AAAAAA» &#55FFFFdc.naturalsmp.my.id
+"""
 
 # ==========================================================
 # Head MOTD Configuration (ZedarMC Style Pixel Art Images)
@@ -74,11 +83,3 @@ fallback-motd = [
     "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>    <gray>•</gray> <white>1.21.4",
     "<gray>» <white>The Most Immersive Experience"
 ]
-kick-reason = """
-<gradient:#FFAA00:#FFFF55><b>NATURAL SMP</b></gradient> <dark_gray>┃</dark_gray> <yellow><b>MAINTENANCE</b></yellow>
-
-<gray>Server sedang dalam tahap perbaikan atau update rutin.
-Hanya staf yang diizinkan masuk untuk saat ini.</gray>
-
-<dark_gray>» <aqua>dc.naturalsmp.net</aqua></dark_gray>
-"""

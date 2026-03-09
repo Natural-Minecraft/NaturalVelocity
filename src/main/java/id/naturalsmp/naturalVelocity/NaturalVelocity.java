@@ -35,8 +35,12 @@ import id.naturalsmp.naturalvelocity.util.headmotd.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Arrays;
+import com.velocitypowered.api.plugin.Dependency;
 
-@Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = { "NaturalSMP" })
+@Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = {
+        "NaturalSMP" }, dependencies = {
+                @Dependency(id = "packetevents")
+        })
 public class NaturalVelocity {
 
     public static final com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier IDENTIFIER = com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier
