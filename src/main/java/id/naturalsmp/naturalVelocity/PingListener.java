@@ -201,7 +201,7 @@ public class PingListener {
             Channel channel = (Channel) getChannelMethod.invoke(mcConnection);
 
             if (channel.pipeline().get("natural_motd_injector") == null) {
-                channel.pipeline().addBefore("minecraft-encoder", "natural_motd_injector",
+                channel.pipeline().addBefore("handler", "natural_motd_injector",
                         new ChannelOutboundHandlerAdapter() {
                             @Override
                             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
