@@ -1,5 +1,6 @@
 package id.naturalsmp.naturalvelocity;
 
+import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.proxy.server.ServerPing;
@@ -105,7 +106,7 @@ public class PingListener {
         }
     }
 
-    @Subscribe
+    @Subscribe(order = PostOrder.LAST)
     public void onPing(ProxyPingEvent event) {
         ServerPing ping = event.getPing();
         ServerPing.Builder builder = ping.asBuilder();
@@ -134,16 +135,21 @@ public class PingListener {
                     UUID.randomUUID()));
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
         } else {
+            // 0. Calculate Player Count (Needed for both text and head MOTD)
+            boolean alwaysPlusOne = config.getBoolean("head-motd.always-plus-one", false);
+            int onlineCount = ping.getPlayers().isPresent() ? ping.getPlayers().get().getOnline() : 0;
+            long configuredMax = config.getLong("head-motd.max-players", 69L);
+            int maxCount = alwaysPlusOne ? onlineCount + 1 : (int) configuredMax;
+
             // 1. Premium MOTD (Line 1 & 2) or Custom Head MOTD
             if (config.getBoolean("head-motd.enabled", false)) {
                 JsonArray motdCache = plugin.getJsonCacheManager() != null ? plugin.getJsonCacheManager().getMotdCache()
                         : null;
 
                 if (motdCache != null && motdCache.size() > 0) {
-                    // Try to inject our custom MOTD JSON directly into the pipeline!
-                    injectNettyHandler(event.getConnection(), motdCache);
-                    builder.description(Component.empty()); // Leave empty, our pipeline handler will inject the real
-                                                            // JSON!
+                    // Inject BOTH Motd and Player count directly into the raw JSON outbound!
+                    injectNettyHandler(event.getConnection(), motdCache, onlineCount, maxCount);
+                    builder.description(Component.empty());
                 } else {
                     List<String> fallback = config.getList("head-motd.fallback-motd");
                     if (fallback != null && !fallback.isEmpty()) {
@@ -165,11 +171,6 @@ public class PingListener {
                     new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
 
             // 3. Player List Hover (Sample)
-            boolean alwaysPlusOne = config.getBoolean("head-motd.always-plus-one", false);
-            int onlineCount = ping.getPlayers().isPresent() ? ping.getPlayers().get().getOnline() : 0;
-            long configuredMax = config.getLong("head-motd.max-players", 69L);
-            int maxCount = alwaysPlusOne ? onlineCount + 1 : (int) configuredMax;
-
             List<ServerPing.SamplePlayer> samples = new ArrayList<>();
             List<String> hoverLines = config.getList("server-list.hover-lines");
             if (hoverLines != null && !hoverLines.isEmpty()) {
@@ -190,13 +191,11 @@ public class PingListener {
         event.setPing(builder.build());
     }
 
-    private void injectNettyHandler(Object connection, JsonArray motdCache) {
+    private void injectNettyHandler(Object connection, JsonArray motdCache, int online, int max) {
         try {
-            // Get underlying MinecraftConnection from InitialInboundConnection
             Method getConnectionMethod = connection.getClass().getMethod("getConnection");
             Object mcConnection = getConnectionMethod.invoke(connection);
 
-            // Get Netty Channel
             Method getChannelMethod = mcConnection.getClass().getMethod("getChannel");
             Channel channel = (Channel) getChannelMethod.invoke(mcConnection);
 
@@ -217,9 +216,21 @@ public class PingListener {
 
                                         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 
-                                        // Flatten the description structure
+                                        // 1. Force Player Count in the raw JSON
+                                        JsonObject players = root.getAsJsonObject("players");
+                                        if (players == null) {
+                                            players = new JsonObject();
+                                            root.add("players", players);
+                                        }
+                                        players.addProperty("online", online);
+                                        players.addProperty("max", max);
+
+                                        // 2. Force Head MOTD in the raw JSON
                                         JsonObject newDesc = new JsonObject();
                                         newDesc.addProperty("text", "");
+                                        newDesc.addProperty("color", "white");
+                                        newDesc.addProperty("italic", false);
+                                        newDesc.addProperty("bold", false);
                                         newDesc.add("extra", motdCache);
 
                                         root.add("description", newDesc);
@@ -237,7 +248,6 @@ public class PingListener {
                         });
             }
         } catch (Exception e) {
-            // Log reflection or pipeline errors
             plugin.getLogger().error("Failed to inject Netty Handler: " + e.getMessage(), e);
         }
     }
