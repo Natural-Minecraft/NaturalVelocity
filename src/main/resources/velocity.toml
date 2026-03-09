@@ -5,9 +5,8 @@
 # Premium MOTD Settings
 # Use &#RRGGBB for hex colors (e.g. &#00AAFF) or MiniMessage tags
 [motd]
-    line1 = "<font:minecraft:uniform><b><#00FF5A>█<#01FC5F>▄ <#05F76A>█ <#09F175>▄<#0BEF7B>▀<#0DEC80>▀<#0FE986>▄ <#13E491>▀<#15E196>█<#17DF9C>▀ <#1BD9A7>█ <#1FD4B2>█ <#23CFBD>█<#25CCC2>▀<#27C9C8>▀<#29C7CD>▄ <#2DC1D8>▄<#2FBFDE>▀<#31BCE3>▀<#33B9E9>▄ <#37B4F4>█  </b></font> <dark_gray>┃</dark_gray> <green><b>SURVIVAL</b></green> <gray>•</gray> <white>1.21.4"
-    line2 = "<font:minecraft:uniform><b><#00FF5A>█ <#03F965>▀<#05F76A>█ <#09F175>█<#0BEF7B>▀<#0DEC80>▀<#0FE986>█  <#15E196>█  <#1BD9A7>█<#1DD7AC>▄<#1FD4B2>█ <#23CFBD>█<#25CCC2>▀<#27C9C8>▀<#29C7CD>▄ <#2DC1D8>█<#2FBFDE>▀<#31BCE3>▀<#33B9E9>█ <#37B4F4>█<#39B1F9>▄<#3BAFFF>▄</b></font> <dark_gray>┃</dark_gray> <gray>» The Most Immersive Experience</gray>"
-
+line1 = "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
+line2 = "&#AAAAAA» &#FFFF55Join now to explore our &#FFAA00PREMIUM FEATURES!"
 # Server List Customization
 [server-list]
 # Shown in place of player count (e.g., "NaturalSMP v1.21")
@@ -48,6 +47,33 @@ password = ""
 [maintenance]
 motd-line1 = "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"
 motd-line2 = "&#AAAAAA» &#FFFFFFServer sedang dalam tahap perbaikan rutin."
+
+# ==========================================================
+# Head MOTD Configuration (ZedarMC Style Pixel Art Images)
+# ==========================================================
+[head-motd]
+# Enable Image-based MOTD rendering
+enabled = true
+
+# MineSkin API Key (MANDATORY for Head MOTDs)
+# Get a free API Key at https://mineskin.org/
+mineskin-api-key = ""
+
+# Name of the image file to use for the MOTD
+# Place this file in the plugins/NaturalVelocity/ data folder
+image-file = "motd.png"
+
+# Automatically add +1 to max players online
+always-plus-one = true
+
+# Disable for Bedrock players natively to prevent visual glitches
+ignore-bedrock = true
+
+# Fallback MOTD for older versions
+fallback-motd = [
+    "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>    <gray>•</gray> <white>1.21.4",
+    "<gray>» <white>The Most Immersive Experience"
+]
 kick-reason = """
 <gradient:#FFAA00:#FFFF55><b>NATURAL SMP</b></gradient> <dark_gray>┃</dark_gray> <yellow><b>MAINTENANCE</b></yellow>
 

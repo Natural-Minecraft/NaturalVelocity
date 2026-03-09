@@ -25,6 +25,16 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import io.github.retrooper.packetevents.velocity.factory.VelocityPacketEventsBuilder;
+import com.velocitypowered.api.plugin.PluginContainer;
+
+import id.naturalsmp.naturalvelocity.util.headmotd.*;
+
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Arrays;
+
 @Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = { "NaturalSMP" })
 public class NaturalVelocity {
 
@@ -40,6 +50,12 @@ public class NaturalVelocity {
     private PingListener pingListener;
     private DatabaseManager databaseManager;
 
+    // Head MOTD variables
+    private JsonCacheManager jsonCacheManager;
+    private ImageProcessor headImageProcessor;
+    private TextureCache textureCache;
+    private final List<List<String>> motdUrls = new CopyOnWriteArrayList<>();
+
     @Inject
     public NaturalVelocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         this.server = server;
@@ -51,6 +67,23 @@ public class NaturalVelocity {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         loadConfig();
         loadWhitelist(); // Persistent whitelist
+
+        // Initialize PacketEvents for Head MOTD manipulation
+        PluginContainer container = server.getPluginManager().fromInstance(this).orElse(null);
+        if (container != null) {
+            PacketEvents.setAPI(VelocityPacketEventsBuilder.build(server, container, logger, dataDirectory));
+            PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false);
+            PacketEvents.getAPI().load();
+            PacketEvents.getAPI().init();
+
+            this.jsonCacheManager = new JsonCacheManager();
+            this.textureCache = new TextureCache(dataDirectory.resolve("head-motd-texture-cache.json").toFile());
+
+            PacketEvents.getAPI().getEventManager().registerListener(new MotdHandler(this),
+                    PacketListenerPriority.HIGHEST);
+
+            loadHeadMotd();
+        }
 
         // Initialize Database
         this.databaseManager = new DatabaseManager(this, logger);
@@ -68,18 +101,25 @@ public class NaturalVelocity {
         // Register Channel
         server.getChannelRegistrar().register(IDENTIFIER);
 
-        // Register Listeners
+        // 3. Register standard events (commands, chat, ping)
         this.pingListener = new PingListener(this);
         server.getEventManager().register(this, pingListener);
         server.getEventManager().register(this, new MaintenanceListener(this));
 
-        // Register Command
+        // Register Commands
         com.velocitypowered.api.command.CommandManager cmdManager = server.getCommandManager();
-        com.velocitypowered.api.command.CommandMeta meta = cmdManager.metaBuilder("nvelocity")
-                .aliases("nv")
-                .plugin(this)
-                .build();
-        cmdManager.register(meta, new NaturalVelocityCommand(this));
+        cmdManager.register(
+                cmdManager.metaBuilder("nvelocity")
+                        .aliases("naturalvelocity")
+                        .plugin(this)
+                        .build(),
+                new NaturalVelocityCommand(this));
+
+        cmdManager.register(
+                cmdManager.metaBuilder("headmotd")
+                        .plugin(this)
+                        .build(),
+                new id.naturalsmp.naturalvelocity.commands.HeadMotdCommand(this));
     }
 
     public void reload() {
@@ -200,6 +240,73 @@ public class NaturalVelocity {
         }
 
         this.config = new Toml().read(file);
+    }
+
+    public void reloadConfigAndIcon() {
+        loadConfig();
+        pingListener.loadIcon();
+        loadWhitelist();
+        loadHeadMotd();
+    }
+
+    private void loadHeadMotd() {
+        if (!getConfig().getBoolean("head-motd.enabled", false)) {
+            return;
+        }
+
+        if (this.headImageProcessor != null) {
+            this.headImageProcessor.shutdown();
+        }
+
+        String apiKey = getConfig().getString("head-motd.mineskin-api-key", "");
+        if (apiKey.isEmpty()) {
+            logger.warn(
+                    "Head MOTD is enabled but no MineSkin API key is configured. Please add one in velocity.toml to generate custom MOTD headers.");
+            return;
+        }
+
+        this.headImageProcessor = new ImageProcessor(
+                new MineSkinClient(apiKey),
+                this.textureCache,
+                dataDirectory.toFile(),
+                this);
+
+        motdUrls.clear();
+        textureCache.load();
+
+        // Load existing mapping from cache
+        String motdCache = textureCache.get("motd-mapping-cache");
+        if (motdCache != null && !motdCache.isEmpty()) {
+            for (String row : motdCache.split(";")) {
+                if (!row.isEmpty())
+                    motdUrls.add(Arrays.asList(row.split(",")));
+            }
+        }
+
+        jsonCacheManager.buildMotdCache(motdUrls);
+
+        List<String> hoverList = getConfig().getList("server-list.hover-lines");
+        if (hoverList != null) {
+            jsonCacheManager.buildHoverCache(hoverList);
+        }
+    }
+
+    // --- Accessors ---
+
+    public JsonCacheManager getJsonCacheManager() {
+        return jsonCacheManager;
+    }
+
+    public ImageProcessor getHeadImageProcessor() {
+        return headImageProcessor;
+    }
+
+    public TextureCache getTextureCache() {
+        return textureCache;
+    }
+
+    public List<List<String>> getMotdUrls() {
+        return motdUrls;
     }
 
     public Toml getConfig() {
