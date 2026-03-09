@@ -32,6 +32,7 @@ import com.velocitypowered.api.plugin.PluginContainer;
 
 import id.naturalsmp.naturalvelocity.util.headmotd.*;
 
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Arrays;
 
