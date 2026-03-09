@@ -227,8 +227,11 @@ public class PingListener {
                                         root.add("description", newDesc);
 
                                         // Write back into the StringBuilder
+                                        String finalJson = root.toString();
                                         sb.setLength(0);
-                                        sb.append(root.toString());
+                                        sb.append(finalJson);
+
+                                        plugin.getLogger().info("SUCCESSFULLY INJECTED MOTD JSON: " + finalJson);
 
                                     } catch (Exception ex) {
                                         plugin.getLogger()
