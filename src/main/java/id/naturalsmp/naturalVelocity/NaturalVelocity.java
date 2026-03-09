@@ -24,10 +24,6 @@ import com.google.gson.JsonParser;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.PacketListenerPriority;
-import io.github.retrooper.packetevents.velocity.factory.VelocityPacketEventsBuilder;
 import com.velocitypowered.api.plugin.PluginContainer;
 
 import id.naturalsmp.naturalvelocity.util.headmotd.*;
@@ -37,10 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Arrays;
 import com.velocitypowered.api.plugin.Dependency;
 
-@Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = {
-        "NaturalSMP" }, dependencies = {
-                @Dependency(id = "packetevents")
-        })
+@Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = { "NaturalSMP" })
 public class NaturalVelocity {
 
     public static final com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier IDENTIFIER = com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier
@@ -73,22 +66,10 @@ public class NaturalVelocity {
         loadConfig();
         loadWhitelist(); // Persistent whitelist
 
-        // Initialize PacketEvents for Head MOTD manipulation
-        PluginContainer container = server.getPluginManager().fromInstance(this).orElse(null);
-        if (container != null) {
-            PacketEvents.setAPI(VelocityPacketEventsBuilder.build(server, container, logger, dataDirectory));
-            PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false);
-            PacketEvents.getAPI().load();
-            PacketEvents.getAPI().init();
-
-            this.jsonCacheManager = new JsonCacheManager();
-            this.textureCache = new TextureCache(dataDirectory.resolve("head-motd-texture-cache.json").toFile());
-
-            PacketEvents.getAPI().getEventManager().registerListener(new MotdHandler(this),
-                    PacketListenerPriority.HIGHEST);
-
-            loadHeadMotd();
-        }
+        // Head MOTD Config Load
+        this.jsonCacheManager = new JsonCacheManager();
+        this.textureCache = new TextureCache(dataDirectory.resolve("head-motd-texture-cache.json").toFile());
+        loadHeadMotd();
 
         // Initialize Database
         this.databaseManager = new DatabaseManager(this, logger);
