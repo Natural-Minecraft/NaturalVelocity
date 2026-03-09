@@ -48,41 +48,10 @@ password = ""
 motd-line1 = "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"
 motd-line2 = "&#AAAAAA» &#FFFFFFServer sedang dalam tahap perbaikan rutin."
 kick-reason = """
-<b><gradient:#FF0000:#FF8800>NATURAL SMP MAINTENANCE</gradient></b>
+<gradient:#FFAA00:#FFFF55><b>NATURAL SMP</b></gradient> <dark_gray>┃</dark_gray> <yellow><b>MAINTENANCE</b></yellow>
 
-&#AAAAAAServer sedang dalam perbaikan.
-&#AAAAAAHanya staf yang diizinkan masuk.
+<gray>Server sedang dalam tahap perbaikan atau update rutin.
+Hanya staf yang diizinkan masuk untuk saat ini.</gray>
 
-&#AAAAAA» &#FFFFFFSelesai dalam beberapa saat lagi...
-&#AAAAAA» &#55FFFFdc.naturalsmp.my.id
+<dark_gray>» <aqua>dc.naturalsmp.net</aqua></dark_gray>
 """
-
-# ==========================================================
-# Head MOTD Configuration (ZedarMC Style Pixel Art Images)
-# ==========================================================
-[head-motd]
-# Enable Image-based MOTD rendering
-enabled = true
-
-# MineSkin API Key (MANDATORY for Head MOTDs)
-# Get a free API Key at https://mineskin.org/
-mineskin-api-key = ""
-
-# Name of the image file to use for the MOTD
-# Place this file in the plugins/NaturalVelocity/ data folder
-image-file = "motd.png"
-
-# Automatically add +1 to max players online
-always-plus-one = false
-
-# Custom static max player count (used if always-plus-one is false)
-max-players = 69
-
-# Disable for Bedrock players natively to prevent visual glitches
-ignore-bedrock = true
-
-# Fallback MOTD for older versions
-fallback-motd = [
-    "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience",
-    "&#AAAAAA» &#FFFF55Join now to explore our &#FFAA00PREMIUM FEATURES!"
-]

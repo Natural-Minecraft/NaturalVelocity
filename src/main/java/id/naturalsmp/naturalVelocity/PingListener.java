@@ -1,6 +1,5 @@
 package id.naturalsmp.naturalvelocity;
 
-import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.proxy.server.ServerPing;
@@ -10,16 +9,6 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
 public class PingListener {
 
@@ -106,7 +95,7 @@ public class PingListener {
         }
     }
 
-    @Subscribe(order = PostOrder.LAST)
+    @Subscribe
     public void onPing(ProxyPingEvent event) {
         ServerPing ping = event.getPing();
         ServerPing.Builder builder = ping.asBuilder();
@@ -135,35 +124,11 @@ public class PingListener {
                     UUID.randomUUID()));
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
         } else {
-            // 0. Calculate Player Count (Needed for both text and head MOTD)
-            boolean alwaysPlusOne = config.getBoolean("head-motd.always-plus-one", false);
-            int onlineCount = ping.getPlayers().isPresent() ? ping.getPlayers().get().getOnline() : 0;
-            long configuredMax = config.getLong("head-motd.max-players", 69L);
-            int maxCount = alwaysPlusOne ? onlineCount + 1 : (int) configuredMax;
-
-            // 1. Premium MOTD (Line 1 & 2) or Custom Head MOTD
-            if (config.getBoolean("head-motd.enabled", false)) {
-                JsonArray motdCache = plugin.getJsonCacheManager() != null ? plugin.getJsonCacheManager().getMotdCache()
-                        : null;
-
-                if (motdCache != null && motdCache.size() > 0) {
-                    // Inject BOTH Motd and Player count directly into the raw JSON outbound!
-                    injectNettyHandler(event.getConnection(), motdCache, onlineCount, maxCount);
-                    builder.description(Component.empty());
-                } else {
-                    List<String> fallback = config.getList("head-motd.fallback-motd");
-                    if (fallback != null && !fallback.isEmpty()) {
-                        String f1 = fallback.get(0);
-                        String f2 = fallback.size() > 1 ? fallback.get(1) : "";
-                        builder.description(parse(f1 + "\n" + f2));
-                    }
-                }
-            } else {
-                String line1 = config.getString("motd.line1",
-                        "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
-                String line2 = config.getString("motd.line2", "<gray>» <white>The Most Immersive Experience");
-                builder.description(parse(line1 + "\n" + line2));
-            }
+            // 1. Premium MOTD (Line 1 & 2)
+            String line1 = config.getString("motd.line1",
+                    "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
+            String line2 = config.getString("motd.line2", "<gray>» <white>The Most Immersive Experience");
+            builder.description(parse(line1 + "\n" + line2));
 
             // 2. Custom Player Count Text
             String versionText = config.getString("server-list.version-text", "NaturalSMP v1.21");
@@ -171,17 +136,14 @@ public class PingListener {
                     new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
 
             // 3. Player List Hover (Sample)
-            List<ServerPing.SamplePlayer> samples = new ArrayList<>();
             List<String> hoverLines = config.getList("server-list.hover-lines");
             if (hoverLines != null && !hoverLines.isEmpty()) {
+                List<ServerPing.SamplePlayer> samples = new ArrayList<>();
                 for (String line : hoverLines) {
                     samples.add(new ServerPing.SamplePlayer(legacy.serialize(parse(line)), UUID.randomUUID()));
                 }
+                builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
             }
-
-            builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
-            builder.onlinePlayers(onlineCount);
-            builder.maximumPlayers(maxCount);
         }
 
         if (cachedIcon != null) {
@@ -189,66 +151,5 @@ public class PingListener {
         }
 
         event.setPing(builder.build());
-    }
-
-    private void injectNettyHandler(Object connection, JsonArray motdCache, int online, int max) {
-        try {
-            Method getConnectionMethod = connection.getClass().getMethod("getConnection");
-            Object mcConnection = getConnectionMethod.invoke(connection);
-
-            Method getChannelMethod = mcConnection.getClass().getMethod("getChannel");
-            Channel channel = (Channel) getChannelMethod.invoke(mcConnection);
-
-            if (channel.pipeline().get("natural_motd_injector") == null) {
-                channel.pipeline().addBefore("handler", "natural_motd_injector",
-                        new ChannelOutboundHandlerAdapter() {
-                            @Override
-                            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
-                                    throws Exception {
-
-                                if (msg.getClass().getSimpleName().equals("StatusResponsePacket")) {
-                                    try {
-                                        Field statusField = msg.getClass().getDeclaredField("status");
-                                        statusField.setAccessible(true);
-
-                                        StringBuilder sb = (StringBuilder) statusField.get(msg);
-                                        String json = sb.toString();
-
-                                        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
-
-                                        // 1. Force Player Count in the raw JSON
-                                        JsonObject players = root.getAsJsonObject("players");
-                                        if (players == null) {
-                                            players = new JsonObject();
-                                            root.add("players", players);
-                                        }
-                                        players.addProperty("online", online);
-                                        players.addProperty("max", max);
-
-                                        // 2. Force Head MOTD in the raw JSON
-                                        JsonObject newDesc = new JsonObject();
-                                        newDesc.addProperty("text", "");
-                                        newDesc.addProperty("color", "white");
-                                        newDesc.addProperty("italic", false);
-                                        newDesc.addProperty("bold", false);
-                                        newDesc.add("extra", motdCache);
-
-                                        root.add("description", newDesc);
-
-                                        sb.setLength(0);
-                                        sb.append(root.toString());
-
-                                    } catch (Exception ex) {
-                                        plugin.getLogger()
-                                                .error("Error modifying StatusResponse JSON: " + ex.getMessage());
-                                    }
-                                }
-                                super.write(ctx, msg, promise);
-                            }
-                        });
-            }
-        } catch (Exception e) {
-            plugin.getLogger().error("Failed to inject Netty Handler: " + e.getMessage(), e);
-        }
     }
 }
