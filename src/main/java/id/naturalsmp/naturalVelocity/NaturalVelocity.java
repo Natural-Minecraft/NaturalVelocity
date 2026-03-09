@@ -14,24 +14,18 @@ import java.nio.file.Files;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
-import java.util.Set;
-import java.util.HashSet;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import com.velocitypowered.api.plugin.PluginContainer;
 
 import id.naturalsmp.naturalvelocity.util.headmotd.*;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Arrays;
-import com.velocitypowered.api.plugin.Dependency;
 
 @Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "1.0-SNAPSHOT", authors = { "NaturalSMP" })
 public class NaturalVelocity {
