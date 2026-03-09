@@ -229,7 +229,8 @@ public class PingListener {
                         });
             }
         } catch (Exception e) {
-            // Silently fail if reflection fails or unsupported protocol layer
+            // Log reflection or pipeline errors
+            plugin.getLogger().error("Failed to inject Netty Handler: " + e.getMessage(), e);
         }
     }
 }
