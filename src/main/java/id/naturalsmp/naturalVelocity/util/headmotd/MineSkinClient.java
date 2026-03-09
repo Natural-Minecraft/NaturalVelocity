@@ -22,8 +22,23 @@ public class MineSkinClient {
                 .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofByteArray(createMultipart(file, boundary)))
                 .build(), HttpResponse.BodyHandlers.ofString())
-                .thenApply(res -> JsonParser.parseString(res.body()).getAsJsonObject()
-                        .getAsJsonObject("data").getAsJsonObject("texture").get("url").getAsString());
+                .thenApply(res -> {
+                    String body = res.body();
+                    try {
+                        com.google.gson.JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                        if (!json.has("data")) {
+                            throw new RuntimeException("MineSkin API Error: " + body);
+                        }
+                        com.google.gson.JsonObject data = json.getAsJsonObject("data");
+                        if (!data.has("texture")) {
+                            throw new RuntimeException("MineSkin API Missing Texture: " + body);
+                        }
+                        return data.getAsJsonObject("texture").get("url").getAsString();
+                    } catch (Exception e) {
+                        throw new RuntimeException(
+                                "Failed to parse MineSkin response! Code: " + res.statusCode() + " | Body: " + body, e);
+                    }
+                });
     }
 
     private byte[] createMultipart(Path file, String b) {

@@ -80,6 +80,6 @@ ignore-bedrock = true
 
 # Fallback MOTD for older versions
 fallback-motd = [
-    "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>    <gray>•</gray> <white>1.21.4",
-    "<gray>» <white>The Most Immersive Experience"
+    "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience",
+    "&#AAAAAA» &#FFFF55Join now to explore our &#FFAA00PREMIUM FEATURES!"
 ]
