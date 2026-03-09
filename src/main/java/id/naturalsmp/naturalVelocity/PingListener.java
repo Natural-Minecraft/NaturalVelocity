@@ -206,11 +206,19 @@ public class PingListener {
                             @Override
                             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
                                     throws Exception {
-                                if (msg.getClass().getSimpleName().equals("StatusResponse")) {
+
+                                plugin.getLogger().info(
+                                        "Netty Injector intercepted outbound packet: " + msg.getClass().getName());
+
+                                if (msg.getClass().getSimpleName().equals("StatusResponse")
+                                        || msg.getClass().getSimpleName().contains("Status")) {
+                                    plugin.getLogger()
+                                            .info("Netty Injector found Status packet: " + msg.getClass().getName());
                                     try {
                                         Field statusField = msg.getClass().getDeclaredField("status");
                                         statusField.setAccessible(true);
                                         String json = (String) statusField.get(msg);
+                                        plugin.getLogger().info("Netty Injector ORIGINAL JSON: " + json);
 
                                         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
                                         JsonObject newDesc = new JsonObject();
