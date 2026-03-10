@@ -48,10 +48,11 @@ public class MineSkinClient {
                         System.out.println("[HeadMOTD] Rate limited (429). Retrying in " + (delayMs / 1000)
                                 + "s (Attempt " + (attempt + 1) + "/5)...");
 
+                        final long finalDelayMs = delayMs;
                         // Schedule retry
                         return CompletableFuture.supplyAsync(() -> {
                             try {
-                                Thread.sleep(delayMs);
+                                Thread.sleep(finalDelayMs);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
