@@ -81,13 +81,10 @@ public class HeadMotdHandler implements PacketListener {
         // Head MOTD (protocol check)
         if (event.getUser().getClientVersion().getProtocolVersion() >= minimumProtocol) {
             if (motdJsonCache.size() > 0) {
+                // For 1.21.x MOTD parsing, it expects a strict text component wrapper
                 JsonObject description = new JsonObject();
-                description.addProperty("color", "white");
-                description.addProperty("italic", false);
-                description.addProperty("bold", false);
-                description.add("extra", motdJsonCache);
-                description.addProperty("shadow_color", -1);
                 description.addProperty("text", "");
+                description.add("extra", motdJsonCache);
                 fullStatus.add("description", description);
             }
         } else {
