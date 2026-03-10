@@ -28,26 +28,7 @@ public class PingListener {
         // 1. Convert &#RRGGBB to <#RRGGBB> (MiniMessage Hex)
         String processed = text.replaceAll("&#([A-Fa-f0-9]{6})", "<#$1>");
 
-        // 2. Convert standard Legacy & codes to MiniMessage tags or handle them
-        // Simplest way for mixed content:
-        // If it contains <gradient> or <# (hex), treat as MiniMessage.
-        // If it contains ONLY &, treating as Legacy is safer.
-        // But for gradients + & legacy, we need mixed handling.
-
-        // Strategy: Convert & -> §, then use LegacySection serializer to deserialize
-        // basic codes,
-        // BUT Logic issue: LegacySection deserializer DOES NOT support MiniMessage
-        // tags.
-
-        // Correct Strategy:
-        // Use MiniMessage for everything. Convert legacy &x to <color>.
-        // Replace &([0-9a-f]) with <$1> ? No, mapped colors.
-
-        // Easier: Just replace & with § and let the final serialization handle it?
-        // No, MiniMessage ignores §.
-
-        // Final Robust Strategy:
-        // Convert legacy & codes to MiniMessage tags manually before parsing.
+        // 2. Convert legacy & codes to MiniMessage tags
         processed = processed
                 .replace("&0", "<black>")
                 .replace("&1", "<dark_blue>")
@@ -101,12 +82,11 @@ public class PingListener {
         ServerPing.Builder builder = ping.asBuilder();
         com.moandjiezana.toml.Toml config = plugin.getConfig();
 
-        // Use standard legacy serializer to prevent "§x..." weirdness in older clients
-        // or hover text
         net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                 .legacySection();
 
         if (plugin.isMaintenanceActive()) {
+            // === MAINTENANCE MODE ===
             // 1. Maintenance MOTD
             String line1 = config.getString("maintenance.motd-line1",
                     "<gradient:#FF0000:#FF8800><bold>MAINTENANCE MODE</bold></gradient>    <gray>•</gray> <white>Natural SMP");
@@ -117,15 +97,20 @@ public class PingListener {
             // 2. Custom Player Count Text
             builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), "\u00A7cMAINTENANCE"));
 
-            // 3. Hover (Optional different hover for maintenance)
+            // 3. Hover
             List<ServerPing.SamplePlayer> samples = new ArrayList<>();
             samples.add(new ServerPing.SamplePlayer(
                     legacy.serialize(parse("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>")),
                     UUID.randomUUID()));
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
+
         } else {
-            // 1. Premium MOTD (Line 1 & 2)
-            if (config.getBoolean("motd.enabled", true)) {
+            // === NORMAL MODE ===
+
+            // 1. MOTD - Only set via Velocity API if HeadMOTD is NOT active
+            // (When HeadMOTD is active, the PacketEvents handler overrides the description
+            // at packet level)
+            if (config.getBoolean("motd.enabled", true) && !plugin.isHeadMotdActive()) {
                 String line1 = config.getString("motd.line1",
                         "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
                 String line2 = config.getString("motd.line2", "<gray>» <white>The Most Immersive Experience");
@@ -138,14 +123,16 @@ public class PingListener {
                 builder.version(
                         new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
 
-                // 3. Player List Hover (Sample)
-                List<String> hoverLines = config.getList("server-list.hover-lines");
-                if (hoverLines != null && !hoverLines.isEmpty()) {
-                    List<ServerPing.SamplePlayer> samples = new ArrayList<>();
-                    for (String line : hoverLines) {
-                        samples.add(new ServerPing.SamplePlayer(legacy.serialize(parse(line)), UUID.randomUUID()));
+                // 3. Player List Hover (only if HeadMOTD is NOT handling hover at packet level)
+                if (!plugin.isHeadMotdActive()) {
+                    List<String> hoverLines = config.getList("server-list.hover-lines");
+                    if (hoverLines != null && !hoverLines.isEmpty()) {
+                        List<ServerPing.SamplePlayer> samples = new ArrayList<>();
+                        for (String line : hoverLines) {
+                            samples.add(new ServerPing.SamplePlayer(legacy.serialize(parse(line)), UUID.randomUUID()));
+                        }
+                        builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
                     }
-                    builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
                 }
             }
         }

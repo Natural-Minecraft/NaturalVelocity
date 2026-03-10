@@ -1,9 +1,11 @@
 # ==========================================
-#      NATURAL VELOCITY - CONFIGURATION
+#      NATURAL VELOCITY v2.0 - CONFIGURATION
+#         HeadPacket MOTD Integration
 # ==========================================
 
-# Premium MOTD Settings
+# Premium MOTD Settings (Text-based fallback)
 # Use &#RRGGBB for hex colors (e.g. &#00AAFF) or MiniMessage tags
+# NOTE: When head-motd is enabled & active, this text MOTD is overridden by pixel art heads.
 [motd]
 enabled = true
 line1 = "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
@@ -16,7 +18,7 @@ enabled = true
 version-text = "&#00AAFFNaturalSMP v1.21.4"
 
 # Hover Player List (Max 10-12 usually)
-# Note: Gradients are discouraged in hover due to character limits
+# These are used by BOTH text MOTD and head MOTD modes.
 hover-lines = [
     "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP: REBORN</gradient></b>",
     "&#AAAAAA----------------------",
@@ -28,6 +30,34 @@ hover-lines = [
     "&#55FFFFDiscord: &#FFFFFFdc.naturalsmp.net",
     "&#FF55FFStore: &#FFFFFFstore.naturalsmp.net"
 ]
+
+# ==========================================
+#     HEAD PIXEL ART MOTD (HeadPacket)
+# ==========================================
+# Renders an image as player heads in the MOTD!
+# Requires: packetevents plugin installed on Velocity
+# Usage: Run "/nv process-motd" from console to generate head textures from your image.
+[head-motd]
+enabled = false
+# MineSkin API Key (REQUIRED for processing)
+# Get a free API Key at https://mineskin.org/
+mineskin-api-key = ""
+# Upload delay in ms (2000 recommended for free accounts)
+mineskin-delay = 2000
+# Folder containing MOTD images (inside NaturalVelocity data folder)
+images-folder = "images"
+# Image file to use (PNG, width multiple of 8 max 264, height 8 or 16)
+motd-image = "motd.png"
+# Minimum protocol version for head MOTD display
+# 773 = Minecraft 1.21.9+ (supports ObjectComponent heads in MOTD)
+motd-minimum-protocol = 773
+# Dynamic Slots: max players = online + 1 (e.g., 5/6, 10/11)
+always-plus-one = true
+# Skip head MOTD for Bedrock/MCPE players (Geyser/Floodgate)
+ignore-bedrock = true
+# Fallback text MOTD for clients below minimum protocol version
+fallback-line1 = "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
+fallback-line2 = "&#AAAAAA» &#FFFF55Please use 1.21.9+ for the full experience!"
 
 # Integration Settings
 [integration]
