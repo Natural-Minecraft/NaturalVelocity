@@ -69,7 +69,8 @@ public class HeadMotdHandler implements PacketListener {
             JsonObject players = fullStatus.getAsJsonObject("players");
             if (players != null) {
                 int online = players.has("online") ? players.get("online").getAsInt() : 0;
-                players.addProperty("max", online + 1);
+                int originalMax = players.has("max") ? players.get("max").getAsInt() : 20;
+                players.addProperty("max", online == 0 ? originalMax : online + 1);
             }
         }
 

@@ -22,8 +22,20 @@ public class MineSkinClient {
                 .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofByteArray(createMultipart(file, boundary)))
                 .build(), HttpResponse.BodyHandlers.ofString())
-                .thenApply(res -> JsonParser.parseString(res.body()).getAsJsonObject()
-                        .getAsJsonObject("data").getAsJsonObject("texture").get("url").getAsString());
+                .thenApply(res -> {
+                    JsonObject json = JsonParser.parseString(res.body()).getAsJsonObject();
+                    if (json.has("data") && json.getAsJsonObject("data").has("texture")) {
+                        return json.getAsJsonObject("data").getAsJsonObject("texture").get("url").getAsString();
+                    } else if (json.has("error")) {
+                        String errMsg = json.get("error").isJsonObject() ? json.getAsJsonObject("error").toString()
+                                : json.get("error").getAsString();
+                        throw new RuntimeException("MineSkin API Error: " + errMsg);
+                    } else if (json.has("message")) {
+                        throw new RuntimeException("MineSkin API Error: " + json.get("message").getAsString());
+                    } else {
+                        throw new RuntimeException("MineSkin API Unknown Response: " + res.body());
+                    }
+                });
     }
 
     private byte[] createMultipart(Path file, String b) {
