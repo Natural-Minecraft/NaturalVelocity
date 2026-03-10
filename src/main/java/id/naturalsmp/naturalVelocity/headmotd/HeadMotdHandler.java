@@ -78,17 +78,18 @@ public class HeadMotdHandler implements PacketListener {
             }
         }
 
-        // Head MOTD (protocol check)
-        if (event.getUser().getClientVersion().getProtocolVersion() >= minimumProtocol) {
+        // Head MOTD (protocol check — must be exact match, e.g. 773 only)
+        if (event.getUser().getClientVersion().getProtocolVersion() == minimumProtocol) {
             if (motdJsonCache.size() > 0) {
-                // For 1.21.x MOTD parsing, it expects a strict text component wrapper
                 JsonObject description = new JsonObject();
-                description.addProperty("text", "");
+                description.addProperty("color", "white");
+                description.addProperty("shadow_color", -1);
                 description.add("extra", motdJsonCache);
+                description.addProperty("text", "");
                 fullStatus.add("description", description);
             }
         } else {
-            // Fallback MOTD for older clients
+            // Fallback MOTD for older/newer clients
             if (!fallbackLine1.isEmpty() || !fallbackLine2.isEmpty()) {
                 String combined = fallbackLine1 + "\n" + fallbackLine2;
                 fullStatus.add("description", createTextComponent(combined));
@@ -137,11 +138,23 @@ public class HeadMotdHandler implements PacketListener {
             for (int i = 0; i < Math.min(2, urls.size()); i++) {
                 urls.get(i).forEach(url -> newCache.add(createHeadJson(url)));
                 if (i < urls.size() - 1 && i < 1) {
+                    // Invisible black dot with newline (matches ZedarMC format)
                     JsonObject newline = new JsonObject();
-                    newline.addProperty("text", "\n");
+                    newline.addProperty("color", "black");
+                    newline.addProperty("shadow_color", 0);
+                    JsonArray nlExtra = new JsonArray();
+                    nlExtra.add("\n");
+                    newline.add("extra", nlExtra);
+                    newline.addProperty("text", ".");
                     newCache.add(newline);
                 }
             }
+            // Trailing invisible black dot
+            JsonObject trailing = new JsonObject();
+            trailing.addProperty("color", "black");
+            trailing.addProperty("shadow_color", 0);
+            trailing.addProperty("text", ".");
+            newCache.add(trailing);
         }
         this.motdJsonCache = newCache;
     }
@@ -172,7 +185,6 @@ public class HeadMotdHandler implements PacketListener {
         String textureJson = "{\"textures\":{\"SKIN\":{\"url\":\"" + url + "\"}}}";
         String textureBase64 = Base64.getEncoder().encodeToString(textureJson.getBytes(StandardCharsets.UTF_8));
         JsonObject player = new JsonObject();
-        player.addProperty("name", "");
         JsonArray properties = new JsonArray();
         JsonObject textureProp = new JsonObject();
         textureProp.addProperty("name", "textures");
@@ -181,8 +193,6 @@ public class HeadMotdHandler implements PacketListener {
         player.add("properties", properties);
         JsonObject headObj = new JsonObject();
         headObj.addProperty("hat", true);
-        headObj.addProperty("italic", false);
-        headObj.addProperty("shadow", false);
         headObj.add("player", player);
         return headObj;
     }
