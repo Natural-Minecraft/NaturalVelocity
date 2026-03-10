@@ -16,6 +16,10 @@ public class MineSkinClient {
     }
 
     public CompletableFuture<String> upload(Path file) {
+        return uploadWithRetry(file, 0);
+    }
+
+    private CompletableFuture<String> uploadWithRetry(Path file, int attempt) {
         String boundary = "---" + System.currentTimeMillis();
         return client.sendAsync(HttpRequest.newBuilder()
                 .uri(URI.create("https://api.mineskin.org/generate/upload"))
@@ -23,18 +27,59 @@ public class MineSkinClient {
                 .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofByteArray(createMultipart(file, boundary)))
                 .build(), HttpResponse.BodyHandlers.ofString())
-                .thenApply(res -> {
-                    JsonObject json = JsonParser.parseString(res.body()).getAsJsonObject();
-                    if (json.has("data") && json.getAsJsonObject("data").has("texture")) {
-                        return json.getAsJsonObject("data").getAsJsonObject("texture").get("url").getAsString();
-                    } else if (json.has("error")) {
-                        String errMsg = json.get("error").isJsonObject() ? json.getAsJsonObject("error").toString()
-                                : json.get("error").getAsString();
-                        throw new RuntimeException("MineSkin API Error: " + errMsg);
-                    } else if (json.has("message")) {
-                        throw new RuntimeException("MineSkin API Error: " + json.get("message").getAsString());
-                    } else {
-                        throw new RuntimeException("MineSkin API Unknown Response: " + res.body());
+                .thenCompose(res -> {
+                    // Handle Rate Limiting (HTTP 429)
+                    if (res.statusCode() == 429) {
+                        if (attempt >= 5) { // Max 5 retries
+                            return CompletableFuture.failedFuture(new RuntimeException(
+                                    "MineSkin API Error: Rate limit exceeded (429) after 5 retries"));
+                        }
+
+                        // Parse Retry-After header if present, else default backoff
+                        long delayMs = 5000L * (attempt + 1); // Exponential-ish backoff: 5s, 10s, 15s...
+                        var retryAfter = res.headers().firstValue("Retry-After");
+                        if (retryAfter.isPresent()) {
+                            try {
+                                delayMs = Long.parseLong(retryAfter.get()) * 1000L;
+                            } catch (NumberFormatException ignored) {
+                            }
+                        }
+
+                        System.out.println("[HeadMOTD] Rate limited (429). Retrying in " + (delayMs / 1000)
+                                + "s (Attempt " + (attempt + 1) + "/5)...");
+
+                        // Schedule retry
+                        return CompletableFuture.supplyAsync(() -> {
+                            try {
+                                Thread.sleep(delayMs);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                            return null;
+                        }).thenCompose(v -> uploadWithRetry(file, attempt + 1));
+                    }
+
+                    // Normal response handling
+                    try {
+                        JsonObject json = JsonParser.parseString(res.body()).getAsJsonObject();
+                        if (json.has("data") && json.getAsJsonObject("data").has("texture")) {
+                            return CompletableFuture.completedFuture(
+                                    json.getAsJsonObject("data").getAsJsonObject("texture").get("url").getAsString());
+                        } else if (json.has("error")) {
+                            String errMsg = json.get("error").isJsonObject() ? json.getAsJsonObject("error").toString()
+                                    : json.get("error").getAsString();
+                            return CompletableFuture
+                                    .failedFuture(new RuntimeException("MineSkin API Error: " + errMsg));
+                        } else if (json.has("message")) {
+                            return CompletableFuture.failedFuture(
+                                    new RuntimeException("MineSkin API Error: " + json.get("message").getAsString()));
+                        } else {
+                            return CompletableFuture
+                                    .failedFuture(new RuntimeException("MineSkin API Unknown Response: " + res.body()));
+                        }
+                    } catch (Exception e) {
+                        return CompletableFuture.failedFuture(new RuntimeException(
+                                "MineSkin API Parse Error: " + e.getMessage() + " | Body: " + res.body()));
                     }
                 });
     }
