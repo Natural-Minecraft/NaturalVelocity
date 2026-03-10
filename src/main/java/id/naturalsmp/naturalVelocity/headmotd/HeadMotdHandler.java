@@ -19,14 +19,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * HeadMotdHandler - Merged HeadPacket MotdHandler + JsonCacheManager
  * Intercepts STATUS_RESPONSE packets and injects head pixel art MOTD,
- * hover messages, always+1 slots, and Bedrock exclusion.
+ * hover messages, always+1 slots, Bedrock exclusion, and maintenance mode.
  */
 public class HeadMotdHandler implements PacketListener {
     private static final AttributeKey<?> FLOODGATE_ATTR = AttributeKey.valueOf("floodgate-player");
 
-    // Cached JSON arrays
+    // Normal MOTD cached JSON arrays
     private JsonArray motdJsonCache = new JsonArray();
     private JsonArray hoverJsonCache = new JsonArray();
+
+    // Maintenance MOTD cached JSON arrays
+    private JsonArray maintenanceMotdJsonCache = new JsonArray();
+    private JsonArray maintenanceHoverJsonCache = new JsonArray();
 
     // Config state
     private boolean enabled = false;
@@ -36,6 +40,11 @@ public class HeadMotdHandler implements PacketListener {
     private String fallbackLine1 = "";
     private String fallbackLine2 = "";
     private final List<List<String>> motdUrls = new CopyOnWriteArrayList<>();
+
+    // Maintenance state
+    private volatile boolean maintenanceActive = false;
+    private String maintenanceLine1 = "";
+    private String maintenanceLine2 = "";
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
@@ -52,8 +61,21 @@ public class HeadMotdHandler implements PacketListener {
                 ? JsonParser.parseString(originalJson).getAsJsonObject()
                 : new JsonObject();
 
-        // Inject hover messages into players.sample
-        if (hoverJsonCache.size() > 0) {
+        int clientProtocol = event.getUser().getClientVersion().getProtocolVersion();
+
+        if (maintenanceActive) {
+            // ========== MAINTENANCE MODE ==========
+
+            // 1. Override version name to §cMAINTENANCE
+            JsonObject version = fullStatus.getAsJsonObject("version");
+            if (version == null) {
+                version = new JsonObject();
+                version.addProperty("protocol", clientProtocol);
+                fullStatus.add("version", version);
+            }
+            version.addProperty("name", "\u00A7cMAINTENANCE");
+
+            // 2. Override players.sample with UNDER MAINTENANCE hover
             JsonObject players = fullStatus.getAsJsonObject("players");
             if (players == null) {
                 players = new JsonObject();
@@ -61,38 +83,72 @@ public class HeadMotdHandler implements PacketListener {
                 players.addProperty("online", 0);
                 fullStatus.add("players", players);
             }
-            players.add("sample", hoverJsonCache);
-        }
-
-        // Always +1 slots
-        if (alwaysPlusOne) {
-            JsonObject players = fullStatus.getAsJsonObject("players");
-            if (players != null) {
-                int online = players.has("online") ? players.get("online").getAsInt() : 0;
-                int originalMax = players.has("max") ? players.get("max").getAsInt() : 20;
-                int nextMax = online == 0 ? originalMax : online + 1;
-                if (nextMax > 69) {
-                    nextMax = 69;
-                }
-                players.addProperty("max", nextMax);
+            if (maintenanceHoverJsonCache.size() > 0) {
+                players.add("sample", maintenanceHoverJsonCache);
             }
-        }
 
-        // Head MOTD (protocol check — must be exact match, e.g. 773 only)
-        if (event.getUser().getClientVersion().getProtocolVersion() == minimumProtocol) {
-            if (motdJsonCache.size() > 0) {
+            // 3. Maintenance MOTD
+            if (clientProtocol == minimumProtocol && maintenanceMotdJsonCache.size() > 0) {
+                // Show maintenance head banner for supported protocol
                 JsonObject description = new JsonObject();
                 description.addProperty("color", "white");
                 description.addProperty("shadow_color", -1);
-                description.add("extra", motdJsonCache);
+                description.add("extra", maintenanceMotdJsonCache);
                 description.addProperty("text", "");
                 fullStatus.add("description", description);
+            } else {
+                // Show maintenance text MOTD (fallback or for unsupported protocol)
+                if (!maintenanceLine1.isEmpty() || !maintenanceLine2.isEmpty()) {
+                    String combined = maintenanceLine1 + "\n" + maintenanceLine2;
+                    fullStatus.add("description", createTextComponent(combined));
+                }
             }
+
         } else {
-            // Fallback MOTD for older/newer clients
-            if (!fallbackLine1.isEmpty() || !fallbackLine2.isEmpty()) {
-                String combined = fallbackLine1 + "\n" + fallbackLine2;
-                fullStatus.add("description", createTextComponent(combined));
+            // ========== NORMAL MODE ==========
+
+            // 1. Inject hover messages into players.sample
+            if (hoverJsonCache.size() > 0) {
+                JsonObject players = fullStatus.getAsJsonObject("players");
+                if (players == null) {
+                    players = new JsonObject();
+                    players.addProperty("max", 0);
+                    players.addProperty("online", 0);
+                    fullStatus.add("players", players);
+                }
+                players.add("sample", hoverJsonCache);
+            }
+
+            // 2. Always +1 slots
+            if (alwaysPlusOne) {
+                JsonObject players = fullStatus.getAsJsonObject("players");
+                if (players != null) {
+                    int online = players.has("online") ? players.get("online").getAsInt() : 0;
+                    int originalMax = players.has("max") ? players.get("max").getAsInt() : 20;
+                    int nextMax = online == 0 ? originalMax : online + 1;
+                    if (nextMax > 69) {
+                        nextMax = 69;
+                    }
+                    players.addProperty("max", nextMax);
+                }
+            }
+
+            // 3. Head MOTD (protocol check — must be exact match, e.g. 773 only)
+            if (clientProtocol == minimumProtocol) {
+                if (motdJsonCache.size() > 0) {
+                    JsonObject description = new JsonObject();
+                    description.addProperty("color", "white");
+                    description.addProperty("shadow_color", -1);
+                    description.add("extra", motdJsonCache);
+                    description.addProperty("text", "");
+                    fullStatus.add("description", description);
+                }
+            } else {
+                // Fallback MOTD for older/newer clients
+                if (!fallbackLine1.isEmpty() || !fallbackLine2.isEmpty()) {
+                    String combined = fallbackLine1 + "\n" + fallbackLine2;
+                    fullStatus.add("description", createTextComponent(combined));
+                }
             }
         }
 
@@ -133,6 +189,14 @@ public class HeadMotdHandler implements PacketListener {
     public void buildMotdCache(List<List<String>> urls) {
         this.motdUrls.clear();
         this.motdUrls.addAll(urls);
+        this.motdJsonCache = buildHeadCacheFromUrls(urls);
+    }
+
+    public void buildMaintenanceMotdCache(List<List<String>> urls) {
+        this.maintenanceMotdJsonCache = buildHeadCacheFromUrls(urls);
+    }
+
+    private JsonArray buildHeadCacheFromUrls(List<List<String>> urls) {
         JsonArray newCache = new JsonArray();
         if (!urls.isEmpty()) {
             for (int i = 0; i < Math.min(2, urls.size()); i++) {
@@ -156,10 +220,18 @@ public class HeadMotdHandler implements PacketListener {
             trailing.addProperty("text", ".");
             newCache.add(trailing);
         }
-        this.motdJsonCache = newCache;
+        return newCache;
     }
 
     public void buildHoverCache(List<String> rawHover) {
+        this.hoverJsonCache = buildHoverCacheFromLines(rawHover);
+    }
+
+    public void buildMaintenanceHoverCache(List<String> rawHover) {
+        this.maintenanceHoverJsonCache = buildHoverCacheFromLines(rawHover);
+    }
+
+    private JsonArray buildHoverCacheFromLines(List<String> rawHover) {
         JsonArray newCache = new JsonArray();
         for (String msg : rawHover) {
             String processed = msg.replaceAll("&#([A-Fa-f0-9]{6})", "<#$1>");
@@ -178,7 +250,7 @@ public class HeadMotdHandler implements PacketListener {
             entry.addProperty("id", UUID.randomUUID().toString());
             newCache.add(entry);
         }
-        this.hoverJsonCache = newCache;
+        return newCache;
     }
 
     private JsonObject createHeadJson(String url) {
@@ -223,10 +295,26 @@ public class HeadMotdHandler implements PacketListener {
         this.fallbackLine2 = fallbackLine2;
     }
 
+    public void setMaintenanceActive(boolean maintenanceActive) {
+        this.maintenanceActive = maintenanceActive;
+    }
+
+    public void setMaintenanceLine1(String maintenanceLine1) {
+        this.maintenanceLine1 = maintenanceLine1;
+    }
+
+    public void setMaintenanceLine2(String maintenanceLine2) {
+        this.maintenanceLine2 = maintenanceLine2;
+    }
+
     // ========== Getters ==========
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean isMaintenanceActive() {
+        return maintenanceActive;
     }
 
     public List<List<String>> getMotdUrls() {
@@ -235,5 +323,9 @@ public class HeadMotdHandler implements PacketListener {
 
     public JsonArray getMotdJsonCache() {
         return motdJsonCache;
+    }
+
+    public JsonArray getMaintenanceMotdJsonCache() {
+        return maintenanceMotdJsonCache;
     }
 }

@@ -78,6 +78,10 @@ password = ""
 
 # Maintenance Mode Display
 [maintenance]
+# Head MOTD banner for maintenance (PNG, max 264x16). 
+# If empty (""), normal text MOTD will be used for maintenance.
+# Usage: Run "/nv process-maintenance-motd" to generate textures.
+motd-image = "maintenance.png"
 motd-line1 = "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"
 motd-line2 = "&#AAAAAA» &#FFFFFFServer sedang dalam tahap perbaikan rutin."
 kick-reason = """

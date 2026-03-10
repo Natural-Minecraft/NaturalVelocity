@@ -173,6 +173,32 @@ public class NaturalVelocity {
         }
         headMotdHandler.buildMotdCache(motdUrls);
 
+        // === Maintenance MOTD config ===
+        headMotdHandler.setMaintenanceLine1(config.getString("maintenance.motd-line1",
+                "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"));
+        headMotdHandler.setMaintenanceLine2(config.getString("maintenance.motd-line2",
+                "&#AAAAAA» &#FFFFFFServer sedang dalam tahap perbaikan rutin."));
+        headMotdHandler.setMaintenanceActive(this.maintenanceActive);
+
+        // Maintenance hover
+        List<String> maintenanceHover = new ArrayList<>();
+        maintenanceHover.add("<gradient:#FFAA00:#FFFF55><bold>UNDER MAINTENANCE</bold></gradient>");
+        maintenanceHover.add("<gray>Server sedang perbaikan rutin.");
+        maintenanceHover.add("<gray>Silahkan coba lagi nanti.");
+        headMotdHandler.buildMaintenanceHoverCache(maintenanceHover);
+
+        // Maintenance head MOTD URL cache (from separate mapping key)
+        String maintMotdCache = mappingCache.get("maintenance-motd");
+        if (maintMotdCache != null && !maintMotdCache.isEmpty()) {
+            List<List<String>> maintUrls = new ArrayList<>();
+            for (String row : maintMotdCache.split(";")) {
+                if (!row.isEmpty())
+                    maintUrls.add(Arrays.asList(row.split(",")));
+            }
+            headMotdHandler.buildMaintenanceMotdCache(maintUrls);
+            logger.info("[HeadMOTD] Maintenance head banner loaded with {} rows.", maintUrls.size());
+        }
+
         // Shutdown old processor
         if (imageProcessor != null)
             imageProcessor.shutdown();
@@ -193,6 +219,21 @@ public class NaturalVelocity {
     }
 
     public void processMotd(com.velocitypowered.api.command.CommandSource source, int pct) {
+        processMotdImage(source, pct, "motd", config.getString("head-motd.motd-image", "motd.png"));
+    }
+
+    public void processMaintenanceMotd(com.velocitypowered.api.command.CommandSource source, int pct) {
+        String maintImage = config.getString("maintenance.motd-image", "");
+        if (maintImage == null || maintImage.trim().isEmpty()) {
+            source.sendMessage(Component.text(
+                    "§c[HeadMOTD] maintenance.motd-image not set in config. Using text MOTD only for maintenance."));
+            return;
+        }
+        processMotdImage(source, pct, "maintenance-motd", maintImage);
+    }
+
+    private void processMotdImage(com.velocitypowered.api.command.CommandSource source, int pct, String cacheKey,
+            String imageName) {
         if (!packetEventsAvailable) {
             source.sendMessage(Component.text("§c[HeadMOTD] PacketEvents not installed! Cannot process head MOTD."));
             return;
@@ -209,24 +250,31 @@ public class NaturalVelocity {
             return;
         }
         String imagesFolder = config.getString("head-motd.images-folder", "images");
-        String motdImage = config.getString("head-motd.motd-image", "motd.png");
-        File file = new File(dataDirectory.resolve(imagesFolder).toFile(), motdImage);
+        File file = new File(dataDirectory.resolve(imagesFolder).toFile(), imageName);
         if (!file.exists()) {
             source.sendMessage(Component.text("§c[HeadMOTD] Image not found: " + file.getAbsolutePath()));
             return;
         }
 
-        source.sendMessage(Component.text("§a[HeadMOTD] Starting image processing..."));
+        String label = cacheKey.equals("motd") ? "MOTD" : "Maintenance MOTD";
+        source.sendMessage(Component.text("§a[HeadMOTD] Starting " + label + " image processing..."));
         imageProcessor.process(file, pct).thenAccept(rows -> {
-            motdUrls.clear();
-            motdUrls.addAll(rows);
             List<String> rowStrings = new ArrayList<>();
             rows.forEach(urls -> rowStrings.add(String.join(",", urls)));
-            mappingCache.put("motd", String.join(";", rowStrings));
-            headMotdHandler.buildMotdCache(motdUrls);
+            mappingCache.put(cacheKey, String.join(";", rowStrings));
+
+            if (cacheKey.equals("motd")) {
+                motdUrls.clear();
+                motdUrls.addAll(rows);
+                headMotdHandler.buildMotdCache(motdUrls);
+            } else {
+                headMotdHandler.buildMaintenanceMotdCache(rows);
+            }
+
             source.sendMessage(
-                    Component.text("§a[HeadMOTD] ✓ Processing complete! " + rows.size() + " rows generated."));
-            source.sendMessage(Component.text("§7[HeadMOTD] Head MOTD is now active in the server list."));
+                    Component.text(
+                            "§a[HeadMOTD] ✓ " + label + " processing complete! " + rows.size() + " rows generated."));
+            source.sendMessage(Component.text("§7[HeadMOTD] " + label + " is now active in the server list."));
         }).exceptionally(ex -> {
             source.sendMessage(Component.text("§c[HeadMOTD] Processing failed: " + ex.getMessage()));
             return null;
@@ -413,6 +461,8 @@ public class NaturalVelocity {
 
                 if (stateChanged) {
                     this.maintenanceActive = true;
+                    if (headMotdHandler != null)
+                        headMotdHandler.setMaintenanceActive(true);
                     logger.info("[CoreDB] Maintenance Mode ENABLED via MySQL.");
                     saveMaintenanceState();
                 }
@@ -427,6 +477,8 @@ public class NaturalVelocity {
                 }
             } else if (stateChanged) {
                 this.maintenanceActive = false;
+                if (headMotdHandler != null)
+                    headMotdHandler.setMaintenanceActive(false);
                 logger.info("[CoreDB] Maintenance Mode DISABLED via MySQL.");
                 saveMaintenanceState();
             }
