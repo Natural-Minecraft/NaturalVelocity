@@ -21,7 +21,13 @@ public class ImageSlicer {
             List<Segment> row = new ArrayList<>();
             for (int x = 0; x < img.getWidth(); x += 8) {
                 BufferedImage sub = img.getSubimage(x, y, 8, 8);
-                row.add(new Segment(sub, hash(sub)));
+                // Pad to 64x64 for MineSkin API
+                BufferedImage padded = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
+                java.awt.Graphics2D g2d = padded.createGraphics();
+                g2d.drawImage(sub, 8, 8, null); // Draw face at 8,8 (MineSkin Face position)
+                g2d.dispose();
+
+                row.add(new Segment(padded, hash(padded)));
             }
             rows.add(row);
         }
