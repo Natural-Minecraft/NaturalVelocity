@@ -5,6 +5,7 @@ import java.net.http.*;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
 
 public class MineSkinClient {
     private final String apiKey;
