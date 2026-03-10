@@ -5,10 +5,13 @@
 # Premium MOTD Settings
 # Use &#RRGGBB for hex colors (e.g. &#00AAFF) or MiniMessage tags
 [motd]
+enabled = true
 line1 = "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
 line2 = "&#AAAAAA» &#FFFF55Join now to explore our &#FFAA00PREMIUM FEATURES!"
+
 # Server List Customization
 [server-list]
+enabled = true
 # Shown in place of player count (e.g., "NaturalSMP v1.21")
 version-text = "&#00AAFFNaturalSMP v1.21.4"
 

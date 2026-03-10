@@ -125,24 +125,28 @@ public class PingListener {
             builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
         } else {
             // 1. Premium MOTD (Line 1 & 2)
-            String line1 = config.getString("motd.line1",
-                    "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
-            String line2 = config.getString("motd.line2", "<gray>» <white>The Most Immersive Experience");
-            builder.description(parse(line1 + "\n" + line2));
+            if (config.getBoolean("motd.enabled", true)) {
+                String line1 = config.getString("motd.line1",
+                        "<gradient:#00AAFF:#55FF55><bold>NATURAL SMP</bold></gradient>");
+                String line2 = config.getString("motd.line2", "<gray>» <white>The Most Immersive Experience");
+                builder.description(parse(line1 + "\n" + line2));
+            }
 
             // 2. Custom Player Count Text
-            String versionText = config.getString("server-list.version-text", "NaturalSMP v1.21");
-            builder.version(
-                    new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
+            if (config.getBoolean("server-list.enabled", true)) {
+                String versionText = config.getString("server-list.version-text", "NaturalSMP v1.21");
+                builder.version(
+                        new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
 
-            // 3. Player List Hover (Sample)
-            List<String> hoverLines = config.getList("server-list.hover-lines");
-            if (hoverLines != null && !hoverLines.isEmpty()) {
-                List<ServerPing.SamplePlayer> samples = new ArrayList<>();
-                for (String line : hoverLines) {
-                    samples.add(new ServerPing.SamplePlayer(legacy.serialize(parse(line)), UUID.randomUUID()));
+                // 3. Player List Hover (Sample)
+                List<String> hoverLines = config.getList("server-list.hover-lines");
+                if (hoverLines != null && !hoverLines.isEmpty()) {
+                    List<ServerPing.SamplePlayer> samples = new ArrayList<>();
+                    for (String line : hoverLines) {
+                        samples.add(new ServerPing.SamplePlayer(legacy.serialize(parse(line)), UUID.randomUUID()));
+                    }
+                    builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
                 }
-                builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
             }
         }
 
