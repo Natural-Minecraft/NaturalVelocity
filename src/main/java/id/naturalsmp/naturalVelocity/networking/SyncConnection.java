@@ -1,4 +1,4 @@
-import id.naturalsmp.naturalvelocity.networking;
+package id.naturalsmp.naturalvelocity.networking;
 
 import java.io.BufferedReader;
 import java.io.IOException;

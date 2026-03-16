@@ -1,4 +1,4 @@
-import id.naturalsmp.naturalvelocity.networking;
+package id.naturalsmp.naturalvelocity.networking;
 
 import java.io.IOException;
 import java.net.ServerSocket;
