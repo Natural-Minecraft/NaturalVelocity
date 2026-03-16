@@ -114,9 +114,9 @@ public class SyncConnection {
 
                         keepAliveTimeOutTime = 100;
 
-                    } else if (clientInput.toLowerCase().contains("run command ")) {
+                    } else if (clientInput.toLowerCase().startsWith("run command ")) {
 
-                        String processCommand = clientInput.toLowerCase().replace("run command ", "");
+                        String processCommand = clientInput.substring("run command ".length());
                         ProxyServer server = NaturalVelocity.getInstance().getServer();
 
                         NaturalVelocity.getInstance().getLogger().info("received command " + processCommand);
