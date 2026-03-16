@@ -21,6 +21,9 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.util.Scanner;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import com.google.gson.JsonArray;
@@ -31,6 +34,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import id.naturalsmp.naturalvelocity.headmotd.*;
+import id.naturalsmp.naturalvelocity.networking.SyncServer;
 
 @Plugin(id = "naturalvelocity", name = "NaturalVelocity", version = "2.0-SNAPSHOT", authors = {
         "NaturalSMP" }, dependencies = { @Dependency(id = "packetevents", optional = true) })
@@ -49,6 +53,9 @@ public class NaturalVelocity {
     private PingListener pingListener;
     private DatabaseManager databaseManager;
 
+    private static NaturalVelocity INSTANCE;
+    private SyncServer syncServer;
+
     // HeadMOTD System
     private HeadMotdHandler headMotdHandler;
     private ImageProcessor imageProcessor;
@@ -65,6 +72,7 @@ public class NaturalVelocity {
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
+        INSTANCE = this;
         loadConfig();
         loadWhitelist();
 
@@ -412,8 +420,60 @@ public class NaturalVelocity {
                 logger.error("Could not save default config!", e);
             }
         }
+        File config = new File(dataDirectory.toFile(), "syncCommand.txt");
+        int port = 25666;
+        String password = "defaultPassword";
+        if (!config.exists()) {
+            try {
+                if (!config.getParentFile().exist()){
+                    config.getParentFile().mkdirs();
+                }
+                config.createNewFile();
+
+                FileWriter writer = new FileWriter(config);
+
+                writer.write("port=25666\n");
+                writer.write("password=defaultPassword");
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Scanner reader = null;
+        try {
+            reader = new Scanner(config);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        while (reader.hasNextLine()) {
+            String data = reader.nextLine();
+            if (data.toLowerCase().contains("port=")) {
+                port = Integer.valueOf(data.replace("port=", ""));
+            }
+            if (data.toLowerCase().contains("password=")) {
+                password = data.replace("password=", "");
+            }
+        }
+        logger.info("Config Dimuat!");
+        reader.close();
+        if (password.equals("defaultPassword")) {
+            logger.warn("ganti passwordnya cui :v");
+        }
+
+        syncServer = new SyncServer();
+        syncServer.runServer(port, password);
 
         this.config = new Toml().read(file);
+    }
+
+    public SyncServer getSyncServer() {
+        return syncServer;
+    }
+
+    public static NaturalVelocity getInstance() {
+        return INSTANCE;
     }
 
     public Toml getConfig() {
