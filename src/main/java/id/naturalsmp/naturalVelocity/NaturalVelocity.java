@@ -425,7 +425,7 @@ public class NaturalVelocity {
         String password = "defaultPassword";
         if (!config.exists()) {
             try {
-                if (!config.getParentFile().exist()){
+                if (!config.getParentFile().exists()){
                     config.getParentFile().mkdirs();
                 }
                 config.createNewFile();
