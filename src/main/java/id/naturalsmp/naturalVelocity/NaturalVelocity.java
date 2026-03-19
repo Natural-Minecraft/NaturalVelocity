@@ -250,9 +250,15 @@ public class NaturalVelocity {
     public void processMotd(com.velocitypowered.api.command.CommandSource source, int pct) {
         List<String> images = new ArrayList<>();
         if (config.contains("head-motd.motd-image")) {
-            if (config.isList("head-motd.motd-image")) {
-                images.addAll(config.getList("head-motd.motd-image"));
-            } else {
+            try {
+                List<String> list = config.getList("head-motd.motd-image");
+                if (list != null) {
+                    images.addAll(list);
+                } else {
+                    String single = config.getString("head-motd.motd-image");
+                    if (single != null) images.add(single);
+                }
+            } catch (Exception e) {
                 images.add(config.getString("head-motd.motd-image"));
             }
         } else {
