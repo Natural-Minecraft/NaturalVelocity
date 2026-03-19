@@ -60,7 +60,7 @@ public class NaturalVelocity {
     private HeadMotdHandler headMotdHandler;
     private ImageProcessor imageProcessor;
     private TextureCache mappingCache;
-    private final List<List<String>> motdUrls = new CopyOnWriteArrayList<>();
+    private final List<List<List<String>>> motdUrls = new CopyOnWriteArrayList<>();
     private boolean packetEventsAvailable = false;
 
     @Inject
@@ -163,23 +163,44 @@ public class NaturalVelocity {
         headMotdHandler.setFallbackLine1(config.getString("head-motd.fallback-line1", ""));
         headMotdHandler.setFallbackLine2(config.getString("head-motd.fallback-line2", ""));
 
+        long delayConfig = config.getLong("head-motd.rotating-motd-delay", 30L);
+        headMotdHandler.setRotatingDelay((int) delayConfig);
+
         // Reload hover cache from main hover-lines config
         List<String> hoverLines = config.getList("server-list.hover-lines");
         if (hoverLines != null) {
             headMotdHandler.buildHoverCache(hoverLines);
         }
 
-        // Reload MOTD URL cache
+        // Reload MOTD URL caches
         motdUrls.clear();
         mappingCache.load();
-        String motdCache = mappingCache.get("motd");
-        if (motdCache != null && !motdCache.isEmpty()) {
-            for (String row : motdCache.split(";")) {
+        
+        String singleCache = mappingCache.get("motd");
+        if (singleCache != null && !singleCache.isEmpty()) {
+            List<List<String>> singleUrls = new ArrayList<>();
+            for (String row : singleCache.split(";")) {
                 if (!row.isEmpty())
-                    motdUrls.add(Arrays.asList(row.split(",")));
+                    singleUrls.add(Arrays.asList(row.split(",")));
+            }
+            motdUrls.add(singleUrls);
+        } else {
+            int i = 0;
+            while(true) {
+                String cache = mappingCache.get("motd_" + i);
+                if (cache == null || cache.isEmpty()) break;
+                List<List<String>> urls = new ArrayList<>();
+                for (String row : cache.split(";")) {
+                    if (!row.isEmpty())
+                        urls.add(Arrays.asList(row.split(",")));
+                }
+                if (!urls.isEmpty()) {
+                    motdUrls.add(urls);
+                }
+                i++;
             }
         }
-        headMotdHandler.buildMotdCache(motdUrls);
+        headMotdHandler.buildMotdCaches(motdUrls);
 
         // === Maintenance MOTD config ===
         headMotdHandler.setMaintenanceLine1(config.getString("maintenance.motd-line1",
@@ -227,7 +248,44 @@ public class NaturalVelocity {
     }
 
     public void processMotd(com.velocitypowered.api.command.CommandSource source, int pct) {
-        processMotdImage(source, pct, "motd", config.getString("head-motd.motd-image", "motd.png"));
+        List<String> images = new ArrayList<>();
+        if (config.contains("head-motd.motd-image")) {
+            if (config.isList("head-motd.motd-image")) {
+                images.addAll(config.getList("head-motd.motd-image"));
+            } else {
+                images.add(config.getString("head-motd.motd-image"));
+            }
+        } else {
+            images.add("motd.png");
+        }
+        if (images.isEmpty()) {
+            source.sendMessage(Component.text("§c[HeadMOTD] Tidak ada gambar MOTD di config."));
+            return;
+        }
+
+        source.sendMessage(Component.text("§a[HeadMOTD] Memproses " + images.size() + " gambar MOTD secara berurutan..."));
+        
+        // Clear old single cache key
+        mappingCache.put("motd", ""); 
+        
+        processMotdImagesSeq(source, pct, images, 0);
+    }
+    
+    private void processMotdImagesSeq(com.velocitypowered.api.command.CommandSource source, int pct, List<String> images, int index) {
+        if (index >= images.size()) {
+            for(int k = images.size(); k < 10; k++) {
+                if (mappingCache.get("motd_" + k) != null) {
+                    mappingCache.put("motd_" + k, "");
+                }
+            }
+            source.sendMessage(Component.text("§a[HeadMOTD] ✓ Semua " + images.size() + " MOTD selesai diproses dan dirotasi!"));
+            server.getScheduler().buildTask(this, this::reloadHeadMotd).schedule();
+            return;
+        }
+        source.sendMessage(Component.text("§7[HeadMOTD] [ " + (index+1) + " / " + images.size() + " ] Memproses: " + images.get(index)));
+        processMotdImageAsync(source, pct, "motd_" + index, images.get(index)).thenAccept(success -> {
+            processMotdImagesSeq(source, pct, images, index + 1);
+        });
     }
 
     public void processMaintenanceMotd(com.velocitypowered.api.command.CommandSource source, int pct) {
@@ -237,56 +295,55 @@ public class NaturalVelocity {
                     "§c[HeadMOTD] maintenance.motd-image not set in config. Using text MOTD only for maintenance."));
             return;
         }
-        processMotdImage(source, pct, "maintenance-motd", maintImage);
+        source.sendMessage(Component.text("§a[HeadMOTD] Starting Maintenance MOTD image processing..."));
+        processMotdImageAsync(source, pct, "maintenance-motd", maintImage).thenAccept(success -> {
+            if(success) {
+                source.sendMessage(Component.text("§a[HeadMOTD] ✓ Maintenance MOTD processing complete!"));
+            }
+        });
     }
 
-    private void processMotdImage(com.velocitypowered.api.command.CommandSource source, int pct, String cacheKey,
-            String imageName) {
+    private java.util.concurrent.CompletableFuture<Boolean> processMotdImageAsync(com.velocitypowered.api.command.CommandSource source, int pct, String cacheKey, String imageName) {
+        java.util.concurrent.CompletableFuture<Boolean> future = new java.util.concurrent.CompletableFuture<>();
         if (!packetEventsAvailable) {
             source.sendMessage(Component.text("§c[HeadMOTD] PacketEvents not installed! Cannot process head MOTD."));
-            return;
+            future.complete(false);
+            return future;
         }
         if (!isHeadMotdEnabled()) {
-            source.sendMessage(
-                    Component.text("§c[HeadMOTD] Head MOTD is disabled in config. Set head-motd.enabled = true"));
-            return;
+            source.sendMessage(Component.text("§c[HeadMOTD] Head MOTD is disabled in config. Set head-motd.enabled = true"));
+            future.complete(false);
+            return future;
         }
         String apiKey = config.getString("head-motd.mineskin-api-key", "");
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            source.sendMessage(
-                    Component.text("§c[HeadMOTD] MineSkin API key not configured! Set head-motd.mineskin-api-key"));
-            return;
+            source.sendMessage(Component.text("§c[HeadMOTD] MineSkin API key not configured! Set head-motd.mineskin-api-key"));
+            future.complete(false);
+            return future;
         }
         String imagesFolder = config.getString("head-motd.images-folder", "images");
         File file = new File(dataDirectory.resolve(imagesFolder).toFile(), imageName);
         if (!file.exists()) {
             source.sendMessage(Component.text("§c[HeadMOTD] Image not found: " + file.getAbsolutePath()));
-            return;
+            future.complete(false);
+            return future;
         }
 
-        String label = cacheKey.equals("motd") ? "MOTD" : "Maintenance MOTD";
-        source.sendMessage(Component.text("§a[HeadMOTD] Starting " + label + " image processing..."));
         imageProcessor.process(file, pct).thenAccept(rows -> {
             List<String> rowStrings = new ArrayList<>();
             rows.forEach(urls -> rowStrings.add(String.join(",", urls)));
             mappingCache.put(cacheKey, String.join(";", rowStrings));
-
-            if (cacheKey.equals("motd")) {
-                motdUrls.clear();
-                motdUrls.addAll(rows);
-                headMotdHandler.buildMotdCache(motdUrls);
-            } else {
+            
+            if (cacheKey.equals("maintenance-motd")) {
                 headMotdHandler.buildMaintenanceMotdCache(rows);
             }
-
-            source.sendMessage(
-                    Component.text(
-                            "§a[HeadMOTD] ✓ " + label + " processing complete! " + rows.size() + " rows generated."));
-            source.sendMessage(Component.text("§7[HeadMOTD] " + label + " is now active in the server list."));
+            future.complete(true);
         }).exceptionally(ex -> {
             source.sendMessage(Component.text("§c[HeadMOTD] Processing failed: " + ex.getMessage()));
+            future.complete(false);
             return null;
         });
+        return future;
     }
 
     @Subscribe

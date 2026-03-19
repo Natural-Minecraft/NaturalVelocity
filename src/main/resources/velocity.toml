@@ -47,7 +47,11 @@ mineskin-delay = 2000
 # Folder containing MOTD images (inside NaturalVelocity data folder)
 images-folder = "images"
 # Image file to use (PNG, width multiple of 8 max 264, height 8 or 16)
-motd-image = "motd.png"
+motd-image = [
+  "motd-new.png",
+  "motd-new-2.png"
+]
+rotating-motd-delay = 30 #in second
 # Minimum protocol version for head MOTD display
 # 773 = Minecraft 1.21.9+ (supports ObjectComponent heads in MOTD)
 motd-minimum-protocol = 773

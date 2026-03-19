@@ -25,7 +25,8 @@ public class HeadMotdHandler implements PacketListener {
     private static final AttributeKey<?> FLOODGATE_ATTR = AttributeKey.valueOf("floodgate-player");
 
     // Normal MOTD cached JSON arrays
-    private JsonArray motdJsonCache = new JsonArray();
+    private final List<JsonArray> motdJsonCaches = new CopyOnWriteArrayList<>();
+    private int rotatingDelay = 30; // seconds
     private JsonArray hoverJsonCache = new JsonArray();
 
     // Maintenance MOTD cached JSON arrays
@@ -39,7 +40,7 @@ public class HeadMotdHandler implements PacketListener {
     private int minimumProtocol = 773;
     private String fallbackLine1 = "";
     private String fallbackLine2 = "";
-    private final List<List<String>> motdUrls = new CopyOnWriteArrayList<>();
+    private final List<List<List<String>>> motdUrls = new CopyOnWriteArrayList<>();
 
     // Maintenance state
     private volatile boolean maintenanceActive = false;
@@ -135,11 +136,13 @@ public class HeadMotdHandler implements PacketListener {
 
             // 3. Head MOTD (protocol check — must be exact match, e.g. 773 only)
             if (clientProtocol == minimumProtocol) {
-                if (motdJsonCache.size() > 0) {
+                if (!motdJsonCaches.isEmpty()) {
+                    int index = (int) ((System.currentTimeMillis() / (rotatingDelay * 1000L)) % motdJsonCaches.size());
+                    JsonArray currentMotdCache = motdJsonCaches.get(index);
                     JsonObject description = new JsonObject();
                     description.addProperty("color", "white");
                     description.addProperty("shadow_color", -1);
-                    description.add("extra", motdJsonCache);
+                    description.add("extra", currentMotdCache);
                     description.addProperty("text", "");
                     fullStatus.add("description", description);
                 }
@@ -186,10 +189,13 @@ public class HeadMotdHandler implements PacketListener {
 
     // ========== Cache Builders ==========
 
-    public void buildMotdCache(List<List<String>> urls) {
+    public void buildMotdCaches(List<List<List<String>>> multiUrls) {
         this.motdUrls.clear();
-        this.motdUrls.addAll(urls);
-        this.motdJsonCache = buildHeadCacheFromUrls(urls);
+        this.motdUrls.addAll(multiUrls);
+        this.motdJsonCaches.clear();
+        for (List<List<String>> urls : multiUrls) {
+            this.motdJsonCaches.add(buildHeadCacheFromUrls(urls));
+        }
     }
 
     public void buildMaintenanceMotdCache(List<List<String>> urls) {
@@ -271,6 +277,10 @@ public class HeadMotdHandler implements PacketListener {
 
     // ========== Config Setters ==========
 
+    public void setRotatingDelay(int rotatingDelay) {
+        this.rotatingDelay = rotatingDelay > 0 ? rotatingDelay : 1;
+    }
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
@@ -317,12 +327,12 @@ public class HeadMotdHandler implements PacketListener {
         return maintenanceActive;
     }
 
-    public List<List<String>> getMotdUrls() {
+    public List<List<List<String>>> getMotdUrls() {
         return motdUrls;
     }
 
-    public JsonArray getMotdJsonCache() {
-        return motdJsonCache;
+    public List<JsonArray> getMotdJsonCaches() {
+        return motdJsonCaches;
     }
 
     public JsonArray getMaintenanceMotdJsonCache() {
