@@ -160,6 +160,7 @@ public class NaturalVelocity {
         headMotdHandler.setAlwaysPlusOne(config.getBoolean("head-motd.always-plus-one", true));
         headMotdHandler.setIgnoreBedrock(config.getBoolean("head-motd.ignore-bedrock", true));
         headMotdHandler.setMinimumProtocol(config.getLong("head-motd.motd-minimum-protocol", 773L).intValue());
+        headMotdHandler.setMaximumProtocol(config.getLong("head-motd.motd-maximum-protocol", 775L).intValue());
         headMotdHandler.setFallbackLine1(config.getString("head-motd.fallback-line1", ""));
         headMotdHandler.setFallbackLine2(config.getString("head-motd.fallback-line2", ""));
 

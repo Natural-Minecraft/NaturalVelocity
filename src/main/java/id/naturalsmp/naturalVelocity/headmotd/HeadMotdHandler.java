@@ -38,6 +38,7 @@ public class HeadMotdHandler implements PacketListener {
     private boolean alwaysPlusOne = true;
     private boolean ignoreBedrock = true;
     private int minimumProtocol = 773;
+    private int maximumProtocol = 775;
     private String fallbackLine1 = "";
     private String fallbackLine2 = "";
     private final List<List<List<String>>> motdUrls = new CopyOnWriteArrayList<>();
@@ -89,7 +90,7 @@ public class HeadMotdHandler implements PacketListener {
             }
 
             // 3. Maintenance MOTD
-            if (clientProtocol == minimumProtocol && maintenanceMotdJsonCache.size() > 0) {
+            if (clientProtocol >= minimumProtocol && clientProtocol <= maximumProtocol && maintenanceMotdJsonCache.size() > 0) {
                 // Show maintenance head banner for supported protocol
                 JsonObject description = new JsonObject();
                 description.addProperty("color", "white");
@@ -134,8 +135,8 @@ public class HeadMotdHandler implements PacketListener {
                 }
             }
 
-            // 3. Head MOTD (protocol check — must be exact match, e.g. 773 only)
-            if (clientProtocol == minimumProtocol) {
+            // 3. Head MOTD (protocol check — range support)
+            if (clientProtocol >= minimumProtocol && clientProtocol <= maximumProtocol) {
                 if (!motdJsonCaches.isEmpty()) {
                     int index = (int) ((System.currentTimeMillis() / (rotatingDelay * 1000L)) % motdJsonCaches.size());
                     JsonArray currentMotdCache = motdJsonCaches.get(index);
@@ -295,6 +296,10 @@ public class HeadMotdHandler implements PacketListener {
 
     public void setMinimumProtocol(int minimumProtocol) {
         this.minimumProtocol = minimumProtocol;
+    }
+
+    public void setMaximumProtocol(int maximumProtocol) {
+        this.maximumProtocol = maximumProtocol;
     }
 
     public void setFallbackLine1(String fallbackLine1) {

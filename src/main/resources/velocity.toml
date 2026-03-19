@@ -53,15 +53,16 @@ motd-image = [
 ]
 rotating-motd-delay = 30 #in second
 # Minimum protocol version for head MOTD display
-# 773 = Minecraft 1.21.9+ (supports ObjectComponent heads in MOTD)
+# 773 = Minecraft 1.21.9, 775 = Minecraft 1.21.11
 motd-minimum-protocol = 773
+motd-maximum-protocol = 775
 # Dynamic Slots: max players = online + 1 (e.g., 5/6, 10/11)
-always-plus-one = true
+always-plus-one = false
 # Skip head MOTD for Bedrock/MCPE players (Geyser/Floodgate)
 ignore-bedrock = true
-# Fallback text MOTD for clients below minimum protocol version
+# Fallback text MOTD for clients below or above protocol range
 fallback-line1 = "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
-fallback-line2 = "&#AAAAAA» &#FFFF55Please use 1.21.9+ for the full experience!"
+fallback-line2 = "&#AAAAAA» &#FFFF55SlimeFun + RPG !"
 
 # Integration Settings
 [integration]
