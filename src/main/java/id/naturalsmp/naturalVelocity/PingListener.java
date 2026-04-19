@@ -119,9 +119,16 @@ public class PingListener {
 
             // 2. Custom Player Count Text
             if (config.getBoolean("server-list.enabled", true)) {
-                String versionText = config.getString("server-list.version-text", "NaturalSMP v1.21");
+                String versionText = config.getString("server-list.version-text", "&c> 1.21.4 - 26.1 [ %online% / %max_player% ]");
+                
+                int online = ping.getPlayers().isPresent() ? ping.getPlayers().get().getOnline() : 0;
+                int max = ping.getPlayers().isPresent() ? ping.getPlayers().get().getMax() : 0;
+                
+                String parsedVersionText = versionText.replace("%online%", String.valueOf(online))
+                                                      .replace("%max_player%", String.valueOf(max));
+
                 builder.version(
-                        new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(versionText))));
+                        new ServerPing.Version(-1, legacy.serialize(parse(parsedVersionText))));
 
                 // 3. Player List Hover (only if HeadMOTD is NOT handling hover at packet level)
                 if (!plugin.isHeadMotdActive()) {

@@ -15,7 +15,7 @@ line2 = "&#AAAAAA» &#FFFF55Join now to explore our &#FFAA00PREMIUM FEATURES!"
 [server-list]
 enabled = true
 # Shown in place of player count (e.g., "NaturalSMP v1.21")
-version-text = "&#00AAFFNaturalSMP v1.21.4"
+version-text = "&c> 1.21.4 - 26.1 [ %online% / %max_player% ]"
 
 # Hover Player List (Max 10-12 usually)
 # These are used by BOTH text MOTD and head MOTD modes.
