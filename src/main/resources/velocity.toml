@@ -9,13 +9,13 @@
 [motd]
 enabled = true
 line1 = "<b><gradient:#3BAFFF:#00FF5A>NATURAL SMP</gradient></b>    &#AAAAAA• &#FFFFFFThe Most Immersive Experience"
-line2 = "&#AAAAAA» &#FFFF55Join now to explore our &#FFAA00PREMIUM FEATURES!"
+line2 = "&#AAAAAA» &#FFFF55SlimeFun + RPG !"
 
 # Server List Customization
 [server-list]
 enabled = true
 # Shown in place of player count (e.g., "NaturalSMP v1.21")
-version-text = "&c> 1.21.4 - 26.1 [ %online% / %max_player% ]"
+version-text = "&b1.21.4 &7- &b26.1 &7[ &f%online% &7/&f %max_player% &7]"
 
 # Hover Player List (Max 10-12 usually)
 # These are used by BOTH text MOTD and head MOTD modes.
@@ -38,10 +38,10 @@ hover-lines = [
 # Requires: packetevents plugin installed on Velocity
 # Usage: Run "/nv process-motd" from console to generate head textures from your image.
 [head-motd]
-enabled = false
+enabled = true
 # MineSkin API Key (REQUIRED for processing)
 # Get a free API Key at https://mineskin.org/
-mineskin-api-key = ""
+mineskin-api-key = "msk_iuZFHO1D_AjtXqgIAOSTdU73DsLdoqLD_yhnBbKm29XxAxplL3R1jd-V4OtltQ3OxwahO1qaN"
 # Upload delay in ms (2000 recommended for free accounts)
 mineskin-delay = 2000
 # Folder containing MOTD images (inside NaturalVelocity data folder)
@@ -51,11 +51,11 @@ motd-image = [
   "motd-new.png",
   "motd-new-2.png"
 ]
-rotating-motd-delay = 30 #in second
+rotatingrotating-motd-delay = 30 #in second
 # Minimum protocol version for head MOTD display
 # 773 = Minecraft 1.21.9, 775 = Minecraft 1.21.11
 motd-minimum-protocol = 773
-motd-maximum-protocol = 775
+motd-maximum-protocol = 774
 # Dynamic Slots: max players = online + 1 (e.g., 5/6, 10/11)
 always-plus-one = false
 # Skip head MOTD for Bedrock/MCPE players (Geyser/Floodgate)
@@ -68,18 +68,19 @@ fallback-line2 = "&#AAAAAA» &#FFFF55SlimeFun + RPG !"
 [integration]
 # Enable synergi with NaturalCore backend
 naturalcore-sync = true
-maintenance-mode = true
+maintenance-mode = false
 
 # ==========================================
 #          CORE DATABASE (MySQL)
 # ==========================================
 [database]
-enabled = true
+enabled = false
 host = "localhost"
 port = 3306
 database = "naturalsmp_core"
 username = "root"
 password = ""
+
 
 # Maintenance Mode Display
 [maintenance]
@@ -97,3 +98,4 @@ Hanya staf yang diizinkan masuk untuk saat ini.</gray>
 
 <dark_gray>» <aqua>dc.naturalsmp.net</aqua></dark_gray>
 """
+
