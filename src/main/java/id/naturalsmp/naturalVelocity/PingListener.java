@@ -128,7 +128,7 @@ public class PingListener {
                                                       .replace("%max_player%", String.valueOf(max));
 
                 builder.version(
-                        new ServerPing.Version(-1, legacy.serialize(parse(parsedVersionText))));
+                        new ServerPing.Version(ping.getVersion().getProtocol(), legacy.serialize(parse(parsedVersionText))));
 
                 // 3. Player List Hover (only if HeadMOTD is NOT handling hover at packet level)
                 if (!plugin.isHeadMotdActive()) {
