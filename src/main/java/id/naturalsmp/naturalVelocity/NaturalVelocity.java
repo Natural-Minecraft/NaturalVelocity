@@ -526,8 +526,10 @@ public class NaturalVelocity {
             logger.warn("ganti passwordnya cui :v");
         }
 
-        syncServer = new SyncServer();
-        syncServer.runServer(port, password);
+        if (syncServer == null) {
+            syncServer = new SyncServer();
+            syncServer.runServer(port, password);
+        }
 
         this.config = new Toml().read(file);
     }
