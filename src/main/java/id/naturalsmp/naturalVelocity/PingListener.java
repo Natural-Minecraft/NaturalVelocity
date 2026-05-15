@@ -85,7 +85,38 @@ public class PingListener {
         net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                 .legacySection();
 
-        if (plugin.isMaintenanceActive()) {
+        if (plugin.isTempClosedActive()) {
+            // === TEMPORARY CLOSED MODE ===
+            com.moandjiezana.toml.Toml cfg = plugin.getConfig();
+
+            // 1. Temp-Closed MOTD
+            String line1 = cfg.getString("temp-closed.motd-line1",
+                    "<b><gradient:#FF4444:#FF8800>NATURAL SMP</gradient></b>    <dark_gray>•</dark_gray> <white>Temporary Closed");
+            String line2 = cfg.getString("temp-closed.motd-line2",
+                    "<gray>» </gray><red><bold>CLOSED</bold></red> <dark_gray>|</dark_gray> <gray>Since 08/05/2026 until </gray><white>-?-");
+            builder.description(parse(line1 + "\n" + line2));
+
+            // 2. Custom version text
+            builder.version(new ServerPing.Version(ping.getVersion().getProtocol(), "\u00A74TEMPORARY CLOSED"));
+
+            // 3. Hover with contact info
+            String closedSince = cfg.getString("temp-closed.closed-since", "08/05/2026");
+            String closedUntil = cfg.getString("temp-closed.closed-until", "");
+            String untilDisplay = (closedUntil == null || closedUntil.trim().isEmpty()) ? "-?-" : closedUntil;
+
+            List<ServerPing.SamplePlayer> samples = new ArrayList<>();
+            samples.add(new ServerPing.SamplePlayer(
+                    legacy.serialize(parse("<gradient:#FF4444:#FF8800><bold>TEMPORARY CLOSED</bold></gradient>")),
+                    UUID.randomUUID()));
+            samples.add(new ServerPing.SamplePlayer(
+                    legacy.serialize(parse("<gray>Since: <white>" + closedSince + "  <gray>Until: <white>" + untilDisplay)),
+                    UUID.randomUUID()));
+            samples.add(new ServerPing.SamplePlayer(
+                    legacy.serialize(parse("<dark_gray>» <aqua>link.naturalsmp.net</aqua>")),
+                    UUID.randomUUID()));
+            builder.samplePlayers(samples.toArray(new ServerPing.SamplePlayer[0]));
+
+        } else if (plugin.isMaintenanceActive()) {
             // === MAINTENANCE MODE ===
             // 1. Maintenance MOTD
             String line1 = config.getString("maintenance.motd-line1",

@@ -33,6 +33,10 @@ public class HeadMotdHandler implements PacketListener {
     private JsonArray maintenanceMotdJsonCache = new JsonArray();
     private JsonArray maintenanceHoverJsonCache = new JsonArray();
 
+    // Temp-Closed MOTD cached JSON arrays
+    private JsonArray tempClosedMotdJsonCache = new JsonArray();
+    private JsonArray tempClosedHoverJsonCache = new JsonArray();
+
     // Config state
     private boolean enabled = false;
     private boolean alwaysPlusOne = true;
@@ -47,6 +51,11 @@ public class HeadMotdHandler implements PacketListener {
     private volatile boolean maintenanceActive = false;
     private String maintenanceLine1 = "";
     private String maintenanceLine2 = "";
+
+    // Temp-Closed state
+    private volatile boolean tempClosedActive = false;
+    private String tempClosedLine1 = "";
+    private String tempClosedLine2 = "";
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
@@ -65,7 +74,46 @@ public class HeadMotdHandler implements PacketListener {
 
         int clientProtocol = event.getUser().getClientVersion().getProtocolVersion();
 
-        if (maintenanceActive) {
+        if (tempClosedActive) {
+            // ========== TEMPORARY CLOSED MODE (highest priority) ==========
+
+            // 1. Override version name
+            JsonObject version = fullStatus.getAsJsonObject("version");
+            if (version == null) {
+                version = new JsonObject();
+                version.addProperty("protocol", clientProtocol);
+                fullStatus.add("version", version);
+            }
+            version.addProperty("name", "\u00A74TEMPORARY CLOSED");
+
+            // 2. Override players.sample with temp-closed hover
+            JsonObject players = fullStatus.getAsJsonObject("players");
+            if (players == null) {
+                players = new JsonObject();
+                players.addProperty("max", 0);
+                players.addProperty("online", 0);
+                fullStatus.add("players", players);
+            }
+            if (tempClosedHoverJsonCache.size() > 0) {
+                players.add("sample", tempClosedHoverJsonCache);
+            }
+
+            // 3. Temp-Closed MOTD
+            if (clientProtocol >= minimumProtocol && clientProtocol <= maximumProtocol && tempClosedMotdJsonCache.size() > 0) {
+                JsonObject description = new JsonObject();
+                description.addProperty("color", "white");
+                description.addProperty("shadow_color", -1);
+                description.add("extra", tempClosedMotdJsonCache);
+                description.addProperty("text", "");
+                fullStatus.add("description", description);
+            } else {
+                if (!tempClosedLine1.isEmpty() || !tempClosedLine2.isEmpty()) {
+                    String combined = tempClosedLine1 + "\n" + tempClosedLine2;
+                    fullStatus.add("description", createTextComponent(combined));
+                }
+            }
+
+        } else if (maintenanceActive) {
             // ========== MAINTENANCE MODE ==========
 
             // 1. Override version name to §cMAINTENANCE
@@ -203,6 +251,10 @@ public class HeadMotdHandler implements PacketListener {
         this.maintenanceMotdJsonCache = buildHeadCacheFromUrls(urls);
     }
 
+    public void buildTempClosedMotdCache(List<List<String>> urls) {
+        this.tempClosedMotdJsonCache = buildHeadCacheFromUrls(urls);
+    }
+
     private JsonArray buildHeadCacheFromUrls(List<List<String>> urls) {
         JsonArray newCache = new JsonArray();
         if (!urls.isEmpty()) {
@@ -236,6 +288,10 @@ public class HeadMotdHandler implements PacketListener {
 
     public void buildMaintenanceHoverCache(List<String> rawHover) {
         this.maintenanceHoverJsonCache = buildHoverCacheFromLines(rawHover);
+    }
+
+    public void buildTempClosedHoverCache(List<String> rawHover) {
+        this.tempClosedHoverJsonCache = buildHoverCacheFromLines(rawHover);
     }
 
     private JsonArray buildHoverCacheFromLines(List<String> rawHover) {
@@ -322,6 +378,18 @@ public class HeadMotdHandler implements PacketListener {
         this.maintenanceLine2 = maintenanceLine2;
     }
 
+    public void setTempClosedActive(boolean tempClosedActive) {
+        this.tempClosedActive = tempClosedActive;
+    }
+
+    public void setTempClosedLine1(String tempClosedLine1) {
+        this.tempClosedLine1 = tempClosedLine1;
+    }
+
+    public void setTempClosedLine2(String tempClosedLine2) {
+        this.tempClosedLine2 = tempClosedLine2;
+    }
+
     // ========== Getters ==========
 
     public boolean isEnabled() {
@@ -342,5 +410,13 @@ public class HeadMotdHandler implements PacketListener {
 
     public JsonArray getMaintenanceMotdJsonCache() {
         return maintenanceMotdJsonCache;
+    }
+
+    public boolean isTempClosedActive() {
+        return tempClosedActive;
+    }
+
+    public JsonArray getTempClosedMotdJsonCache() {
+        return tempClosedMotdJsonCache;
     }
 }

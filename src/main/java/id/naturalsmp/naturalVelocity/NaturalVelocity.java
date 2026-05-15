@@ -44,6 +44,7 @@ public class NaturalVelocity {
             .from("natural:main");
 
     private boolean maintenanceActive = false;
+    private boolean tempClosedActive = false;
     private final Set<String> whitelistedPlayers = new HashSet<>();
     private final ProxyServer server;
     private final Logger logger;
@@ -74,25 +75,33 @@ public class NaturalVelocity {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         INSTANCE = this;
         loadConfig();
-        loadWhitelist();
 
-        // Initialize Database
-        this.databaseManager = new DatabaseManager(this, logger);
-        if (databaseManager.isEnabled()) {
-            databaseManager.connect();
-            startDatabasePolling();
+        // Read temp-closed state immediately after config load
+        this.tempClosedActive = config.getBoolean("temp-closed.enabled", false);
+
+        if (tempClosedActive) {
+            logger.info("[TempClosed] ⛔ Temporary Closed mode AKTIF — DB & NaturalCore sync dinonaktifkan.");
+        } else {
+            loadWhitelist();
+
+            // Initialize Database (only when not temp-closed)
+            this.databaseManager = new DatabaseManager(this, logger);
+            if (databaseManager.isEnabled()) {
+                databaseManager.connect();
+                startDatabasePolling();
+            }
+
+            this.maintenanceActive = config.getBoolean("integration.maintenance-mode", false);
+            this.messageHandler = new id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler(this);
+
+            // Register Channel
+            server.getChannelRegistrar().register(IDENTIFIER);
         }
-
-        this.maintenanceActive = config.getBoolean("integration.maintenance-mode", false);
-        this.messageHandler = new id.naturalsmp.naturalvelocity.messaging.PluginMessageHandler(this);
 
         // Initialize PacketEvents for HeadMOTD
         initPacketEvents();
 
         logger.info("NaturalVelocity v2.0 has been initialized! 🚀");
-
-        // Register Channel
-        server.getChannelRegistrar().register(IDENTIFIER);
 
         // Register Listeners
         this.pingListener = new PingListener(this);
@@ -203,6 +212,38 @@ public class NaturalVelocity {
         }
         headMotdHandler.buildMotdCaches(motdUrls);
 
+        // === Temp-Closed MOTD config ===
+        String closedSince = config.getString("temp-closed.closed-since", "08/05/2026");
+        String closedUntil = config.getString("temp-closed.closed-until", "");
+        String untilDisplay = (closedUntil == null || closedUntil.trim().isEmpty()) ? "-?-" : closedUntil;
+
+        headMotdHandler.setTempClosedLine1(config.getString("temp-closed.motd-line1",
+                "<b><gradient:#FF4444:#FF8800>NATURAL SMP</gradient></b>    <dark_gray>•</dark_gray> <white>Temporary Closed"));
+        headMotdHandler.setTempClosedLine2(config.getString("temp-closed.motd-line2",
+                "<gray>» </gray><red><bold>CLOSED</bold></red> <dark_gray>|</dark_gray> <gray>Since "
+                + closedSince + " until </gray><white>" + untilDisplay));
+        headMotdHandler.setTempClosedActive(this.tempClosedActive);
+
+        // Temp-closed hover
+        List<String> tempClosedHover = new ArrayList<>();
+        tempClosedHover.add("<gradient:#FF4444:#FF8800><bold>TEMPORARY CLOSED</bold></gradient>");
+        tempClosedHover.add("<gray>Dibuka sejak: <white>" + closedSince);
+        tempClosedHover.add("<gray>Dibuka kembali: <white>" + untilDisplay);
+        tempClosedHover.add("<dark_gray>» <aqua>link.naturalsmp.net</aqua>");
+        headMotdHandler.buildTempClosedHoverCache(tempClosedHover);
+
+        // Temp-closed head MOTD URL cache
+        String tcMotdCache = mappingCache.get("tempclosed-motd");
+        if (tcMotdCache != null && !tcMotdCache.isEmpty()) {
+            List<List<String>> tcUrls = new ArrayList<>();
+            for (String row : tcMotdCache.split(";")) {
+                if (!row.isEmpty())
+                    tcUrls.add(Arrays.asList(row.split(",")));
+            }
+            headMotdHandler.buildTempClosedMotdCache(tcUrls);
+            logger.info("[HeadMOTD] Temp-Closed head banner loaded with {} rows.", tcUrls.size());
+        }
+
         // === Maintenance MOTD config ===
         headMotdHandler.setMaintenanceLine1(config.getString("maintenance.motd-line1",
                 "<b><gradient:#FF0000:#FF8800>MAINTENANCE MODE</gradient></b>    &#AAAAAA• &#FFFFFFNatural SMP"));
@@ -304,8 +345,24 @@ public class NaturalVelocity {
         }
         source.sendMessage(Component.text("§a[HeadMOTD] Starting Maintenance MOTD image processing..."));
         processMotdImageAsync(source, pct, "maintenance-motd", maintImage).thenAccept(success -> {
-            if(success) {
+            if (success) {
                 source.sendMessage(Component.text("§a[HeadMOTD] ✓ Maintenance MOTD processing complete!"));
+            }
+        });
+    }
+
+    public void processTempClosedMotd(com.velocitypowered.api.command.CommandSource source, int pct) {
+        String tcImage = config.getString("temp-closed.motd-image", "");
+        if (tcImage == null || tcImage.trim().isEmpty()) {
+            source.sendMessage(Component.text(
+                    "§c[HeadMOTD] temp-closed.motd-image not set in config. Using text MOTD only."));
+            return;
+        }
+        source.sendMessage(Component.text("§a[HeadMOTD] Starting Temp-Closed MOTD image processing..."));
+        processMotdImageAsync(source, pct, "tempclosed-motd", tcImage).thenAccept(success -> {
+            if (success) {
+                source.sendMessage(Component.text("§a[HeadMOTD] ✓ Temp-Closed MOTD processing complete!"));
+                server.getScheduler().buildTask(this, this::reloadHeadMotd).schedule();
             }
         });
     }
@@ -340,9 +397,11 @@ public class NaturalVelocity {
             List<String> rowStrings = new ArrayList<>();
             rows.forEach(urls -> rowStrings.add(String.join(",", urls)));
             mappingCache.put(cacheKey, String.join(";", rowStrings));
-            
+
             if (cacheKey.equals("maintenance-motd")) {
                 headMotdHandler.buildMaintenanceMotdCache(rows);
+            } else if (cacheKey.equals("tempclosed-motd")) {
+                headMotdHandler.buildTempClosedMotdCache(rows);
             }
             future.complete(true);
         }).exceptionally(ex -> {
@@ -367,7 +426,11 @@ public class NaturalVelocity {
 
     public void reload() {
         loadConfig();
-        loadWhitelist();
+        this.tempClosedActive = config.getBoolean("temp-closed.enabled", false);
+        if (!tempClosedActive) {
+            loadWhitelist();
+            this.maintenanceActive = config.getBoolean("integration.maintenance-mode", false);
+        }
         if (pingListener != null) {
             pingListener.loadIcon();
         }
@@ -455,6 +518,10 @@ public class NaturalVelocity {
         return maintenanceActive;
     }
 
+    public boolean isTempClosedActive() {
+        return tempClosedActive;
+    }
+
     public boolean isHeadMotdEnabled() {
         return config.getBoolean("head-motd.enabled", false);
     }
@@ -526,12 +593,18 @@ public class NaturalVelocity {
             logger.warn("ganti passwordnya cui :v");
         }
 
-        if (syncServer == null) {
-            syncServer = new SyncServer();
-            syncServer.runServer(port, password);
-        }
-
+        // Read TOML first so we can gate SyncServer on temp-closed flag
         this.config = new Toml().read(file);
+
+        boolean isTempClosed = this.config.getBoolean("temp-closed.enabled", false);
+        if (!isTempClosed) {
+            if (syncServer == null) {
+                syncServer = new SyncServer();
+                syncServer.runServer(port, password);
+            }
+        } else {
+            logger.info("[TempClosed] SyncServer (NaturalCore) tidak diinisialisasi.");
+        }
     }
 
     public SyncServer getSyncServer() {

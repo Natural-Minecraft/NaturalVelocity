@@ -99,3 +99,29 @@ Hanya staf yang diizinkan masuk untuk saat ini.</gray>
 <dark_gray>» <aqua>dc.naturalsmp.net</aqua></dark_gray>
 """
 
+# ==========================================
+#       TEMPORARY CLOSED MODE
+# ==========================================
+# Aktifkan mode ini ketika server tutup sementara tanpa ETA.
+# Saat enabled = true, Database & NaturalCore sync TIDAK diinisialisasi.
+[temp-closed]
+enabled = false
+# Tanggal sejak tutup & perkiraan buka (kosongkan closed-until untuk "-?-")
+closed-since = "08/05/2026"
+closed-until = ""
+# Head MOTD image untuk temp-closed (PNG, max 264x16, taruh di folder images/)
+# Jalankan "/nv process-tempclosed-motd" dari console untuk generate textures.
+motd-image = "closed-motd.png"
+# Text MOTD fallback (untuk klien yang tidak support Head MOTD)
+motd-line1 = "<b><gradient:#FF4444:#FF8800>NATURAL SMP</gradient></b>    <dark_gray>•</dark_gray> <white>Temporary Closed"
+motd-line2 = "<gray>» </gray><red><bold>CLOSED</bold></red> <dark_gray>|</dark_gray> <gray>Since 08/05/2026 until </gray><white>-?-"
+# Pesan kick untuk pemain yang mencoba join (MiniMessage)
+kick-reason = """
+<gradient:#FF4444:#FF8800><bold>NaturalSMP</bold></gradient> <dark_gray>┃</dark_gray> <red><bold>TEMPORARY CLOSED</bold></red>
+
+<gray>Server sedang tutup sementara.
+Kunjungi kami lagi nanti!</gray>
+
+<dark_gray>» <aqua>link.naturalsmp.net</aqua></dark_gray>
+"""
+

@@ -18,10 +18,25 @@ public class MaintenanceListener {
 
     @Subscribe
     public void onLogin(LoginEvent event) {
+        Player player = event.getPlayer();
+
+        // === TEMPORARY CLOSED CHECK (highest priority) ===
+        if (plugin.isTempClosedActive()) {
+            if (!player.hasPermission("naturalsmp.tempclosed.bypass")) {
+                String kickReason = plugin.getConfig().getString("temp-closed.kick-reason",
+                        "<gradient:#FF4444:#FF8800><bold>NaturalSMP</bold></gradient> <dark_gray>┃</dark_gray> <red><bold>TEMPORARY CLOSED</bold></red>\n\n<gray>Server sedang tutup sementara.\nKunjungi kami lagi nanti!</gray>\n\n<dark_gray>» <aqua>link.naturalsmp.net</aqua></dark_gray>");
+                Component component = parse(kickReason);
+                Component flattened = LegacyComponentSerializer.legacySection()
+                        .deserialize(LegacyComponentSerializer.legacySection().serialize(component));
+                event.setResult(LoginEvent.ComponentResult.denied(flattened));
+            }
+            return;
+        }
+
+        // === MAINTENANCE CHECK ===
         if (!plugin.isMaintenanceActive())
             return;
 
-        Player player = event.getPlayer();
         if (player.hasPermission("naturalsmp.maintenance.bypass") ||
                 plugin.getWhitelistedPlayers().contains(player.getUsername().toLowerCase())) {
             return;

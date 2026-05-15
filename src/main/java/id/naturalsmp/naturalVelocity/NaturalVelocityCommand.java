@@ -33,6 +33,10 @@ public class NaturalVelocityCommand implements SimpleCommand {
                             mm.deserialize(
                                     "<gray>» <white>/nv process-maintenance-motd [%] <gray>- Generate maintenance head banner"));
             invocation.source()
+                    .sendMessage(
+                            mm.deserialize(
+                                    "<gray>» <white>/nv process-tempclosed-motd [%] <gray>- Generate temp-closed head banner"));
+            invocation.source()
                     .sendMessage(mm.deserialize("<gray>» <white>/nv status <gray>- Show HeadMOTD status"));
             return;
         }
@@ -97,6 +101,30 @@ public class NaturalVelocityCommand implements SimpleCommand {
             return;
         }
 
+        if (args[0].equalsIgnoreCase("process-tempclosed-motd")) {
+            if (!invocation.source().hasPermission("naturalsmp.admin")) {
+                invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
+                return;
+            }
+
+            int percentage = 100;
+            if (args.length > 1) {
+                try {
+                    percentage = Integer.parseInt(args[1]);
+                    if (percentage < 1)
+                        percentage = 1;
+                    if (percentage > 100)
+                        percentage = 100;
+                } catch (NumberFormatException e) {
+                    invocation.source().sendMessage(mm.deserialize(
+                            "<red>Invalid percentage! Usage: /nv process-tempclosed-motd [1-100]"));
+                    return;
+                }
+            }
+            plugin.processTempClosedMotd(invocation.source(), percentage);
+            return;
+        }
+
         if (args[0].equalsIgnoreCase("status")) {
             if (!invocation.source().hasPermission("naturalsmp.admin")) {
                 invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
@@ -112,6 +140,9 @@ public class NaturalVelocityCommand implements SimpleCommand {
                     "<gray>» <white>Head MOTD Active: " +
                             (plugin.isHeadMotdActive() ? "<green>YES <gray>(heads loaded)"
                                     : "<red>NO <gray>(no heads cached)")));
+            invocation.source().sendMessage(mm.deserialize(
+                    "<gray>» <white>Temp-Closed: " +
+                            (plugin.isTempClosedActive() ? "<red>ON" : "<green>OFF")));
             invocation.source().sendMessage(mm.deserialize(
                     "<gray>» <white>Maintenance: " +
                             (plugin.isMaintenanceActive() ? "<red>ON" : "<green>OFF")));
@@ -129,7 +160,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
     public List<String> suggest(Invocation invocation) {
         String[] args = invocation.arguments();
         if (args.length <= 1) {
-            return Arrays.asList("reload", "help", "process-motd", "process-maintenance-motd", "status").stream()
+            return Arrays.asList("reload", "help", "process-motd", "process-maintenance-motd", "process-tempclosed-motd", "status").stream()
                     .filter(s -> s.startsWith(args.length == 0 ? "" : args[0].toLowerCase()))
                     .collect(Collectors.toList());
         }
