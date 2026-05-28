@@ -57,6 +57,11 @@ public class NaturalVelocity {
     private static NaturalVelocity INSTANCE;
     private SyncServer syncServer;
 
+    private final Set<String> maintenanceServers = new HashSet<>();
+    private com.velocitypowered.api.scheduler.ScheduledTask activeCountdownTask = null;
+    private String countdownServerName = null;
+    private int countdownSecondsRemaining = 0;
+
     // HeadMOTD System
     private HeadMotdHandler headMotdHandler;
     private ImageProcessor imageProcessor;
@@ -115,6 +120,13 @@ public class NaturalVelocity {
                 .plugin(this)
                 .build();
         cmdManager.register(meta, new NaturalVelocityCommand(this));
+
+        // Register Maintenance Command
+        com.velocitypowered.api.command.CommandMeta mtMeta = cmdManager.metaBuilder("maintenance")
+                .aliases("mt")
+                .plugin(this)
+                .build();
+        cmdManager.register(mtMeta, new MaintenanceCommand(this));
 
         // Initialize HeadMOTD images folder
         if (isHeadMotdEnabled()) {
@@ -501,7 +513,7 @@ public class NaturalVelocity {
         }
     }
 
-    private void saveWhitelist() {
+    public void saveWhitelist() {
         File file = new File(dataDirectory.toFile(), "whitelist.json");
         try {
             JsonArray array = new JsonArray();
@@ -641,31 +653,62 @@ public class NaturalVelocity {
 
     private void startDatabasePolling() {
         server.getScheduler().buildTask(this, () -> {
-            if (!databaseManager.isEnabled())
+            if (tempClosedActive)
+                return;
+            if (databaseManager == null || !databaseManager.isEnabled())
                 return;
 
-            boolean active = databaseManager.getMaintenanceActive();
-            boolean stateChanged = (active != this.maintenanceActive);
+            String status = databaseManager.getMaintenanceStatus();
+            if (status == null)
+                return;
 
-            if (active) {
-                java.util.List<String> whitelist = databaseManager.getMaintenanceWhitelist();
-                Set<String> newWhitelist = new HashSet<>(whitelist);
+            List<String[]> dbWhitelist = databaseManager.getMaintenanceWhitelist();
+            Set<String> newWhitelist = new HashSet<>();
+            for (String[] entry : dbWhitelist) {
+                newWhitelist.add(entry[0].toLowerCase());
+            }
 
-                if (!newWhitelist.equals(this.whitelistedPlayers)) {
-                    this.whitelistedPlayers.clear();
-                    this.whitelistedPlayers.addAll(newWhitelist);
-                    logger.info("[CoreDB] Maintenance Whitelist updated via MySQL. Size: " + whitelistedPlayers.size());
-                    saveWhitelist();
+            if (!newWhitelist.equals(this.whitelistedPlayers)) {
+                this.whitelistedPlayers.clear();
+                this.whitelistedPlayers.addAll(newWhitelist);
+                logger.info("[CoreDB] Maintenance Whitelist updated via MySQL. Size: " + whitelistedPlayers.size());
+                saveWhitelist();
+            }
+
+            boolean newGlobalActive = false;
+            Set<String> newMaintenanceServers = new HashSet<>();
+
+            if (!status.equalsIgnoreCase("false")) {
+                if (status.equalsIgnoreCase("true") || status.equalsIgnoreCase("global")) {
+                    newGlobalActive = true;
+                    newMaintenanceServers.add("global");
+                } else {
+                    for (String s : status.split(",")) {
+                        String clean = s.trim().toLowerCase();
+                        if (!clean.isEmpty()) {
+                            newMaintenanceServers.add(clean);
+                        }
+                    }
+                }
+            }
+
+            boolean globalStateChanged = (newGlobalActive != this.maintenanceActive);
+            boolean serversStateChanged = !newMaintenanceServers.equals(this.maintenanceServers);
+
+            if (globalStateChanged || serversStateChanged) {
+                this.maintenanceActive = newGlobalActive;
+                this.maintenanceServers.clear();
+                this.maintenanceServers.addAll(newMaintenanceServers);
+
+                if (headMotdHandler != null) {
+                    headMotdHandler.setMaintenanceActive(this.maintenanceActive);
                 }
 
-                if (stateChanged) {
-                    this.maintenanceActive = true;
-                    if (headMotdHandler != null)
-                        headMotdHandler.setMaintenanceActive(true);
-                    logger.info("[CoreDB] Maintenance Mode ENABLED via MySQL.");
-                    saveMaintenanceState();
-                }
+                logger.info("[CoreDB] Maintenance State updated via MySQL. Global: " + maintenanceActive + ", Servers: " + maintenanceServers);
+                saveMaintenanceState();
+            }
 
+            if (this.maintenanceActive) {
                 for (com.velocitypowered.api.proxy.Player player : server.getAllPlayers()) {
                     if (player.hasPermission("naturalsmp.maintenance.bypass"))
                         continue;
@@ -674,15 +717,217 @@ public class NaturalVelocity {
                     String kickReason = config.getString("maintenance.kick-reason");
                     player.disconnect(parse(kickReason));
                 }
-            } else if (stateChanged) {
-                this.maintenanceActive = false;
-                if (headMotdHandler != null)
-                    headMotdHandler.setMaintenanceActive(false);
-                logger.info("[CoreDB] Maintenance Mode DISABLED via MySQL.");
-                saveMaintenanceState();
+            } else {
+                for (String serverName : this.maintenanceServers) {
+                    Optional<com.velocitypowered.api.proxy.server.RegisteredServer> targetServer = server.getServer(serverName);
+                    if (targetServer.isPresent()) {
+                        Optional<com.velocitypowered.api.proxy.server.RegisteredServer> lobby = server.getServer("lobby");
+                        for (com.velocitypowered.api.proxy.Player player : targetServer.get().getPlayersConnected()) {
+                            if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                                continue;
+                            if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
+                                continue;
+                            
+                            if (lobby.isPresent()) {
+                                player.createConnectionRequest(lobby.get()).fireAndForget();
+                                player.sendMessage(Component.text("§c[Maintenance] Server " + serverName + " sedang maintenance. Anda dipindahkan ke Lobby."));
+                            } else {
+                                String kickReason = config.getString("maintenance.kick-reason");
+                                player.disconnect(parse(kickReason));
+                            }
+                        }
+                    }
+                }
             }
 
         }).repeat(10, java.util.concurrent.TimeUnit.SECONDS).schedule();
+    }
+
+    public void startCountdown(String serverName, int seconds, com.velocitypowered.api.command.CommandSource source) {
+        if (activeCountdownTask != null) {
+            activeCountdownTask.cancel();
+            source.sendMessage(Component.text("§c[Maintenance] Countdown sebelumnya dibatalkan karena ada countdown baru."));
+        }
+
+        this.countdownServerName = serverName;
+        this.countdownSecondsRemaining = seconds;
+
+        source.sendMessage(Component.text("§a[Maintenance] Memulai countdown maintenance untuk " + serverName + " selama " + seconds + " detik."));
+
+        this.activeCountdownTask = server.getScheduler().buildTask(this, () -> {
+            if (countdownSecondsRemaining <= 0) {
+                activateMaintenance(countdownServerName, server.getConsoleCommandSource());
+                cancelCountdown(false);
+                return;
+            }
+
+            if (countdownSecondsRemaining == 30 || countdownSecondsRemaining == 20 || countdownSecondsRemaining == 10 || 
+                (countdownSecondsRemaining <= 5 && countdownSecondsRemaining >= 1)) {
+                
+                Component announceMsg = Component.text("§c[Maintenance] Server " + 
+                        (countdownServerName.equalsIgnoreCase("global") ? "Global" : countdownServerName) + 
+                        " akan masuk ke mode maintenance dalam " + countdownSecondsRemaining + " detik!");
+                
+                if (countdownServerName.equalsIgnoreCase("global")) {
+                    for (com.velocitypowered.api.proxy.Player p : server.getAllPlayers()) {
+                        p.sendMessage(announceMsg);
+                    }
+                } else {
+                    Optional<com.velocitypowered.api.proxy.server.RegisteredServer> target = server.getServer(countdownServerName);
+                    if (target.isPresent()) {
+                        for (com.velocitypowered.api.proxy.Player p : target.get().getPlayersConnected()) {
+                            p.sendMessage(announceMsg);
+                        }
+                    }
+                }
+            }
+
+            countdownSecondsRemaining--;
+        }).repeat(1, java.util.concurrent.TimeUnit.SECONDS).schedule();
+    }
+
+    public void cancelCountdown(boolean notify) {
+        if (activeCountdownTask != null) {
+            activeCountdownTask.cancel();
+            activeCountdownTask = null;
+            if (notify) {
+                Component cancelMsg = Component.text("§a[Maintenance] Countdown maintenance untuk " + countdownServerName + " telah dibatalkan.");
+                for (com.velocitypowered.api.proxy.Player p : server.getAllPlayers()) {
+                    p.sendMessage(cancelMsg);
+                }
+            }
+            countdownServerName = null;
+            countdownSecondsRemaining = 0;
+        }
+    }
+
+    public void activateMaintenance(String serverName, com.velocitypowered.api.command.CommandSource source) {
+        logger.info("[Maintenance] Mengaktifkan maintenance untuk: " + serverName);
+
+        if (databaseManager != null && databaseManager.isEnabled()) {
+            if (serverName.equalsIgnoreCase("global")) {
+                databaseManager.setMaintenanceStatus("global");
+            } else {
+                String current = databaseManager.getMaintenanceStatus();
+                Set<String> servers = new HashSet<>();
+                if (current != null && !current.equalsIgnoreCase("false") && !current.equalsIgnoreCase("global") && !current.equalsIgnoreCase("true")) {
+                    for (String s : current.split(",")) {
+                        if (!s.trim().isEmpty()) servers.add(s.trim().toLowerCase());
+                    }
+                }
+                servers.add(serverName.toLowerCase());
+                databaseManager.setMaintenanceStatus(String.join(",", servers));
+            }
+        }
+
+        if (serverName.equalsIgnoreCase("global")) {
+            this.maintenanceActive = true;
+            this.maintenanceServers.clear();
+            this.maintenanceServers.add("global");
+            if (headMotdHandler != null) {
+                headMotdHandler.setMaintenanceActive(true);
+            }
+
+            for (com.velocitypowered.api.proxy.Player player : server.getAllPlayers()) {
+                if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                    continue;
+                if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
+                    continue;
+                String kickReason = config.getString("maintenance.kick-reason");
+                player.disconnect(parse(kickReason));
+            }
+        } else {
+            this.maintenanceServers.add(serverName.toLowerCase());
+
+            Optional<com.velocitypowered.api.proxy.server.RegisteredServer> target = server.getServer(serverName);
+            if (target.isPresent()) {
+                Optional<com.velocitypowered.api.proxy.server.RegisteredServer> lobby = server.getServer("lobby");
+                for (com.velocitypowered.api.proxy.Player player : target.get().getPlayersConnected()) {
+                    if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                        continue;
+                    if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
+                        continue;
+
+                    if (lobby.isPresent()) {
+                        player.createConnectionRequest(lobby.get()).fireAndForget();
+                        player.sendMessage(Component.text("§c[Maintenance] Server " + serverName + " sedang maintenance. Anda dipindahkan ke Lobby."));
+                    } else {
+                        String kickReason = config.getString("maintenance.kick-reason");
+                        player.disconnect(parse(kickReason));
+                    }
+                }
+            }
+        }
+
+        saveMaintenanceState();
+        source.sendMessage(Component.text("§a[Maintenance] Berhasil mengaktifkan maintenance untuk " + serverName + "."));
+    }
+
+    public void deactivateMaintenance(String serverName, com.velocitypowered.api.command.CommandSource source) {
+        logger.info("[Maintenance] Menonaktifkan maintenance untuk: " + serverName);
+
+        if (databaseManager != null && databaseManager.isEnabled()) {
+            if (serverName.equalsIgnoreCase("global")) {
+                databaseManager.setMaintenanceStatus("false");
+            } else {
+                String current = databaseManager.getMaintenanceStatus();
+                if (current != null && !current.equalsIgnoreCase("false") && !current.equalsIgnoreCase("global") && !current.equalsIgnoreCase("true")) {
+                    Set<String> servers = new HashSet<>();
+                    for (String s : current.split(",")) {
+                        String clean = s.trim().toLowerCase();
+                        if (!clean.isEmpty() && !clean.equalsIgnoreCase(serverName.toLowerCase())) {
+                            servers.add(clean);
+                        }
+                    }
+                    if (servers.isEmpty()) {
+                        databaseManager.setMaintenanceStatus("false");
+                    } else {
+                        databaseManager.setMaintenanceStatus(String.join(",", servers));
+                    }
+                } else {
+                    databaseManager.setMaintenanceStatus("false");
+                }
+            }
+        }
+
+        if (serverName.equalsIgnoreCase("global")) {
+            this.maintenanceActive = false;
+            this.maintenanceServers.clear();
+            if (headMotdHandler != null) {
+                headMotdHandler.setMaintenanceActive(false);
+            }
+        } else {
+            this.maintenanceServers.remove(serverName.toLowerCase());
+            if (this.maintenanceServers.isEmpty()) {
+                this.maintenanceActive = false;
+                if (headMotdHandler != null) {
+                    headMotdHandler.setMaintenanceActive(false);
+                }
+            }
+        }
+
+        saveMaintenanceState();
+        source.sendMessage(Component.text("§a[Maintenance] Berhasil menonaktifkan maintenance untuk " + serverName + "."));
+    }
+
+    public Set<String> getMaintenanceServers() {
+        return maintenanceServers;
+    }
+
+    public com.velocitypowered.api.scheduler.ScheduledTask getActiveCountdownTask() {
+        return activeCountdownTask;
+    }
+
+    public String getCountdownServerName() {
+        return countdownServerName;
+    }
+
+    public int getCountdownSecondsRemaining() {
+        return countdownSecondsRemaining;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
     }
 
     public Component parse(String text) {
