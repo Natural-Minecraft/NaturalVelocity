@@ -21,9 +21,9 @@ public class MaintenanceCommand implements SimpleCommand {
     @Override
     public void execute(Invocation invocation) {
         boolean hasAdmin = invocation.source() instanceof com.velocitypowered.api.proxy.ConsoleCommandSource || 
-                           invocation.source().hasPermission("naturalsmp.admin");
+                           invocation.source().hasPermission("naturalvelocity.admin");
         if (!hasAdmin) {
-            invocation.source().sendMessage(mm.deserialize("<red>Anda tidak memiliki permission untuk menggunakan perintah ini!"));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>Anda tidak memiliki permission untuk menggunakan perintah ini!"));
             return;
         }
 
@@ -40,17 +40,17 @@ public class MaintenanceCommand implements SimpleCommand {
             case "add" -> handleAdd(invocation, args);
             case "remove" -> handleRemove(invocation, args);
             case "status" -> handleStatus(invocation);
-            default -> invocation.source().sendMessage(mm.deserialize("<red>Subcommand tidak dikenal. Gunakan /maintenance help"));
+            default -> NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>Subcommand tidak dikenal. Gunakan /maintenance help"));
         }
     }
 
     private void sendHelp(com.velocitypowered.api.command.CommandSource source) {
-        source.sendMessage(mm.deserialize("<gradient:#FF4444:#FF8800><bold>Maintenance System Help</bold></gradient>"));
-        source.sendMessage(mm.deserialize("<gray>» <white>/maintenance on [time] [server] <gray>- Mengaktifkan maintenance (countdown opsi)"));
-        source.sendMessage(mm.deserialize("<gray>» <white>/maintenance off [server] <gray>- Menonaktifkan maintenance"));
-        source.sendMessage(mm.deserialize("<gray>» <white>/maintenance add <username> <gray>- Menambah player ke whitelist bypass"));
-        source.sendMessage(mm.deserialize("<gray>» <white>/maintenance remove <username> <gray>- Menghapus player dari whitelist bypass"));
-        source.sendMessage(mm.deserialize("<gray>» <white>/maintenance status <gray>- Melihat status maintenance aktif"));
+        NaturalVelocity.sendMessage(source, mm.deserialize("<gradient:#FF4444:#FF8800><bold>Maintenance System Help</bold></gradient>"));
+        NaturalVelocity.sendMessage(source, mm.deserialize("<gray>» <white>/maintenance on [time] [server] <gray>- Mengaktifkan maintenance (countdown opsi)"));
+        NaturalVelocity.sendMessage(source, mm.deserialize("<gray>» <white>/maintenance off [server] <gray>- Menonaktifkan maintenance"));
+        NaturalVelocity.sendMessage(source, mm.deserialize("<gray>» <white>/maintenance add <username> <gray>- Menambah player ke whitelist bypass"));
+        NaturalVelocity.sendMessage(source, mm.deserialize("<gray>» <white>/maintenance remove <username> <gray>- Menghapus player dari whitelist bypass"));
+        NaturalVelocity.sendMessage(source, mm.deserialize("<gray>» <white>/maintenance status <gray>- Melihat status maintenance aktif"));
     }
 
     private void handleOn(Invocation invocation, String[] args) {
@@ -74,7 +74,7 @@ public class MaintenanceCommand implements SimpleCommand {
         if (!serverName.equalsIgnoreCase("global")) {
             Optional<RegisteredServer> target = plugin.getServer().getServer(serverName);
             if (target.isEmpty()) {
-                invocation.source().sendMessage(mm.deserialize("<red>Server '" + serverName + "' tidak ditemukan di proxy!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>Server '" + serverName + "' tidak ditemukan di proxy!"));
                 return;
             }
         }
@@ -104,7 +104,7 @@ public class MaintenanceCommand implements SimpleCommand {
 
     private void handleAdd(Invocation invocation, String[] args) {
         if (args.length < 2) {
-            invocation.source().sendMessage(mm.deserialize("<red>Penggunaan: /maintenance add <username>"));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>Penggunaan: /maintenance add <username>"));
             return;
         }
 
@@ -112,7 +112,7 @@ public class MaintenanceCommand implements SimpleCommand {
         String lowercaseUser = username.toLowerCase();
 
         if (plugin.getWhitelistedPlayers().contains(lowercaseUser)) {
-            invocation.source().sendMessage(mm.deserialize("<yellow>Pemain '" + username + "' sudah ada di dalam whitelist bypass."));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<yellow>Pemain '" + username + "' sudah ada di dalam whitelist bypass."));
             return;
         }
 
@@ -127,7 +127,7 @@ public class MaintenanceCommand implements SimpleCommand {
         if (plugin.getDatabaseManager() != null && plugin.getDatabaseManager().isEnabled()) {
             boolean success = plugin.getDatabaseManager().addPlayerToWhitelist(lowercaseUser, uuidStr);
             if (!success) {
-                invocation.source().sendMessage(mm.deserialize("<red>Gagal menyimpan ke database!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>Gagal menyimpan ke database!"));
                 return;
             }
         }
@@ -135,12 +135,12 @@ public class MaintenanceCommand implements SimpleCommand {
         plugin.getWhitelistedPlayers().add(lowercaseUser);
         plugin.saveWhitelist();
 
-        invocation.source().sendMessage(mm.deserialize("<green>Pemain '" + username + "' (" + uuidStr + ") berhasil ditambahkan ke whitelist bypass."));
+        NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<green>Pemain '" + username + "' (" + uuidStr + ") berhasil ditambahkan ke whitelist bypass."));
     }
 
     private void handleRemove(Invocation invocation, String[] args) {
         if (args.length < 2) {
-            invocation.source().sendMessage(mm.deserialize("<red>Penggunaan: /maintenance remove <username>"));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>Penggunaan: /maintenance remove <username>"));
             return;
         }
 
@@ -148,14 +148,14 @@ public class MaintenanceCommand implements SimpleCommand {
         String lowercaseUser = username.toLowerCase();
 
         if (!plugin.getWhitelistedPlayers().contains(lowercaseUser)) {
-            invocation.source().sendMessage(mm.deserialize("<yellow>Pemain '" + username + "' tidak ditemukan di whitelist bypass."));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<yellow>Pemain '" + username + "' tidak ditemukan di whitelist bypass."));
             return;
         }
 
         if (plugin.getDatabaseManager() != null && plugin.getDatabaseManager().isEnabled()) {
             boolean success = plugin.getDatabaseManager().removePlayerFromWhitelist(lowercaseUser);
             if (!success) {
-                invocation.source().sendMessage(mm.deserialize("<red>Gagal menghapus dari database!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>Gagal menghapus dari database!"));
                 return;
             }
         }
@@ -163,26 +163,26 @@ public class MaintenanceCommand implements SimpleCommand {
         plugin.getWhitelistedPlayers().remove(lowercaseUser);
         plugin.saveWhitelist();
 
-        invocation.source().sendMessage(mm.deserialize("<green>Pemain '" + username + "' berhasil dihapus dari whitelist bypass."));
+        NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<green>Pemain '" + username + "' berhasil dihapus dari whitelist bypass."));
     }
 
     private void handleStatus(Invocation invocation) {
-        invocation.source().sendMessage(mm.deserialize("<gradient:#FF4444:#FF8800><bold>Maintenance Status</bold></gradient>"));
+        NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<gradient:#FF4444:#FF8800><bold>Maintenance Status</bold></gradient>"));
         
         Set<String> servers = plugin.getMaintenanceServers();
         if (servers.contains("global")) {
-            invocation.source().sendMessage(mm.deserialize("<gray>» <white>Status: <red>Global Maintenance Aktif"));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<gray>» <white>Status: <red>Global Maintenance Aktif"));
         } else if (!servers.isEmpty()) {
-            invocation.source().sendMessage(mm.deserialize("<gray>» <white>Status: <yellow>Maintenance Aktif untuk server: <aqua>" + String.join(", ", servers)));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<gray>» <white>Status: <yellow>Maintenance Aktif untuk server: <aqua>" + String.join(", ", servers)));
         } else {
-            invocation.source().sendMessage(mm.deserialize("<gray>» <white>Status: <green>Tidak Aktif"));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<gray>» <white>Status: <green>Tidak Aktif"));
         }
 
         if (plugin.getActiveCountdownTask() != null) {
-            invocation.source().sendMessage(mm.deserialize("<gray>» <white>Countdown: <yellow>" + plugin.getCountdownSecondsRemaining() + " detik <gray>(target: <aqua>" + plugin.getCountdownServerName() + "<gray>)"));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<gray>» <white>Countdown: <yellow>" + plugin.getCountdownSecondsRemaining() + " detik <gray>(target: <aqua>" + plugin.getCountdownServerName() + "<gray>)"));
         }
 
-        invocation.source().sendMessage(mm.deserialize("<gray>» <white>Total Player Whitelist Bypass: <green>" + plugin.getWhitelistedPlayers().size() + " pemain"));
+        NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<gray>» <white>Total Player Whitelist Bypass: <green>" + plugin.getWhitelistedPlayers().size() + " pemain"));
     }
 
     @Override
