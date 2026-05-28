@@ -18,6 +18,8 @@ public class NaturalVelocityCommand implements SimpleCommand {
     @Override
     public void execute(Invocation invocation) {
         String[] args = invocation.arguments();
+        boolean hasAdmin = invocation.source() instanceof com.velocitypowered.api.proxy.ConsoleCommandSource || 
+                           invocation.source().hasPermission("naturalsmp.admin");
 
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             invocation.source().sendMessage(
@@ -42,7 +44,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
         }
 
         if (args[0].equalsIgnoreCase("reload")) {
-            if (!invocation.source().hasPermission("naturalsmp.admin")) {
+            if (!hasAdmin) {
                 invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
                 return;
             }
@@ -54,7 +56,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
         }
 
         if (args[0].equalsIgnoreCase("process-motd")) {
-            if (!invocation.source().hasPermission("naturalsmp.admin")) {
+            if (!hasAdmin) {
                 invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
                 return;
             }
@@ -78,7 +80,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
         }
 
         if (args[0].equalsIgnoreCase("process-maintenance-motd")) {
-            if (!invocation.source().hasPermission("naturalsmp.admin")) {
+            if (!hasAdmin) {
                 invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
                 return;
             }
@@ -102,7 +104,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
         }
 
         if (args[0].equalsIgnoreCase("process-tempclosed-motd")) {
-            if (!invocation.source().hasPermission("naturalsmp.admin")) {
+            if (!hasAdmin) {
                 invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
                 return;
             }
@@ -126,7 +128,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
         }
 
         if (args[0].equalsIgnoreCase("status")) {
-            if (!invocation.source().hasPermission("naturalsmp.admin")) {
+            if (!hasAdmin) {
                 invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
                 return;
             }

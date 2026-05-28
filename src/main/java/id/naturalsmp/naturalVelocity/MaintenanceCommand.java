@@ -20,7 +20,9 @@ public class MaintenanceCommand implements SimpleCommand {
 
     @Override
     public void execute(Invocation invocation) {
-        if (!invocation.source().hasPermission("naturalsmp.admin")) {
+        boolean hasAdmin = invocation.source() instanceof com.velocitypowered.api.proxy.ConsoleCommandSource || 
+                           invocation.source().hasPermission("naturalsmp.admin");
+        if (!hasAdmin) {
             invocation.source().sendMessage(mm.deserialize("<red>Anda tidak memiliki permission untuk menggunakan perintah ini!"));
             return;
         }
