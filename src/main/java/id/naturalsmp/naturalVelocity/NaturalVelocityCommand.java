@@ -19,45 +19,40 @@ public class NaturalVelocityCommand implements SimpleCommand {
     public void execute(Invocation invocation) {
         String[] args = invocation.arguments();
         boolean hasAdmin = invocation.source() instanceof com.velocitypowered.api.proxy.ConsoleCommandSource || 
-                           invocation.source().hasPermission("naturalsmp.admin");
+                           invocation.source().hasPermission("naturalvelocity.admin");
 
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-            invocation.source().sendMessage(
+            NaturalVelocity.sendMessage(invocation.source(),
                     mm.deserialize("<gradient:#00AAFF:#55FF55><bold>NaturalVelocity v2.0 Help</bold></gradient>"));
-            invocation.source()
-                    .sendMessage(
+            NaturalVelocity.sendMessage(invocation.source(),
                             mm.deserialize("<gray>» <white>/nv reload <gray>- Reload configuration, icon & head MOTD"));
-            invocation.source()
-                    .sendMessage(
+            NaturalVelocity.sendMessage(invocation.source(),
                             mm.deserialize("<gray>» <white>/nv process-motd [%] <gray>- Generate head pixel art MOTD"));
-            invocation.source()
-                    .sendMessage(
+            NaturalVelocity.sendMessage(invocation.source(),
                             mm.deserialize(
                                     "<gray>» <white>/nv process-maintenance-motd [%] <gray>- Generate maintenance head banner"));
-            invocation.source()
-                    .sendMessage(
+            NaturalVelocity.sendMessage(invocation.source(),
                             mm.deserialize(
                                     "<gray>» <white>/nv process-tempclosed-motd [%] <gray>- Generate temp-closed head banner"));
-            invocation.source()
-                    .sendMessage(mm.deserialize("<gray>» <white>/nv status <gray>- Show HeadMOTD status"));
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<gray>» <white>/nv status <gray>- Show HeadMOTD status"));
             return;
         }
 
         if (args[0].equalsIgnoreCase("reload")) {
             if (!hasAdmin) {
-                invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>You do not have permission!"));
                 return;
             }
 
             plugin.reload();
-            invocation.source().sendMessage(mm.deserialize(
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                     "<gradient:#00AAFF:#55FF55><bold>NaturalVelocity</bold></gradient> <gray>» <green>Configuration reloaded successfully!"));
             return;
         }
 
         if (args[0].equalsIgnoreCase("process-motd")) {
             if (!hasAdmin) {
-                invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>You do not have permission!"));
                 return;
             }
 
@@ -70,7 +65,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
                     if (percentage > 100)
                         percentage = 100;
                 } catch (NumberFormatException e) {
-                    invocation.source().sendMessage(mm.deserialize(
+                    NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                             "<red>Invalid percentage! Usage: /nv process-motd [1-100]"));
                     return;
                 }
@@ -81,7 +76,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
 
         if (args[0].equalsIgnoreCase("process-maintenance-motd")) {
             if (!hasAdmin) {
-                invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>You do not have permission!"));
                 return;
             }
 
@@ -94,7 +89,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
                     if (percentage > 100)
                         percentage = 100;
                 } catch (NumberFormatException e) {
-                    invocation.source().sendMessage(mm.deserialize(
+                    NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                             "<red>Invalid percentage! Usage: /nv process-maintenance-motd [1-100]"));
                     return;
                 }
@@ -105,7 +100,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
 
         if (args[0].equalsIgnoreCase("process-tempclosed-motd")) {
             if (!hasAdmin) {
-                invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>You do not have permission!"));
                 return;
             }
 
@@ -118,7 +113,7 @@ public class NaturalVelocityCommand implements SimpleCommand {
                     if (percentage > 100)
                         percentage = 100;
                 } catch (NumberFormatException e) {
-                    invocation.source().sendMessage(mm.deserialize(
+                    NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                             "<red>Invalid percentage! Usage: /nv process-tempclosed-motd [1-100]"));
                     return;
                 }
@@ -129,32 +124,32 @@ public class NaturalVelocityCommand implements SimpleCommand {
 
         if (args[0].equalsIgnoreCase("status")) {
             if (!hasAdmin) {
-                invocation.source().sendMessage(mm.deserialize("<red>You do not have permission!"));
+                NaturalVelocity.sendMessage(invocation.source(), mm.deserialize("<red>You do not have permission!"));
                 return;
             }
 
-            invocation.source().sendMessage(mm.deserialize(
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                     "<gradient:#00AAFF:#55FF55><bold>NaturalVelocity Status</bold></gradient>"));
-            invocation.source().sendMessage(mm.deserialize(
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                     "<gray>» <white>Head MOTD Enabled: " +
                             (plugin.isHeadMotdEnabled() ? "<green>YES" : "<red>NO")));
-            invocation.source().sendMessage(mm.deserialize(
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                     "<gray>» <white>Head MOTD Active: " +
                             (plugin.isHeadMotdActive() ? "<green>YES <gray>(heads loaded)"
                                     : "<red>NO <gray>(no heads cached)")));
-            invocation.source().sendMessage(mm.deserialize(
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                     "<gray>» <white>Temp-Closed: " +
                             (plugin.isTempClosedActive() ? "<red>ON" : "<green>OFF")));
-            invocation.source().sendMessage(mm.deserialize(
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                     "<gray>» <white>Maintenance: " +
                             (plugin.isMaintenanceActive() ? "<red>ON" : "<green>OFF")));
-            invocation.source().sendMessage(mm.deserialize(
+            NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                     "<gray>» <white>Online Players: <aqua>" + plugin.getServer().getPlayerCount()));
             return;
         }
 
         // Unknown subcommand
-        invocation.source().sendMessage(mm.deserialize(
+        NaturalVelocity.sendMessage(invocation.source(), mm.deserialize(
                 "<red>Unknown subcommand. Use <white>/nv help <red>for help."));
     }
 

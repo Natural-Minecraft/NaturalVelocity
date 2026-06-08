@@ -710,7 +710,7 @@ public class NaturalVelocity {
 
             if (this.maintenanceActive) {
                 for (com.velocitypowered.api.proxy.Player player : server.getAllPlayers()) {
-                    if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                    if (player.hasPermission("naturalvelocity.maintenance.bypass"))
                         continue;
                     if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
                         continue;
@@ -723,14 +723,14 @@ public class NaturalVelocity {
                     if (targetServer.isPresent()) {
                         Optional<com.velocitypowered.api.proxy.server.RegisteredServer> lobby = server.getServer("lobby");
                         for (com.velocitypowered.api.proxy.Player player : targetServer.get().getPlayersConnected()) {
-                            if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                            if (player.hasPermission("naturalvelocity.maintenance.bypass"))
                                 continue;
                             if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
                                 continue;
                             
                             if (lobby.isPresent()) {
                                 player.createConnectionRequest(lobby.get()).fireAndForget();
-                                player.sendMessage(Component.text("§c[Maintenance] Server " + serverName + " sedang maintenance. Anda dipindahkan ke Lobby."));
+                                sendMessage(player, Component.text("§c[Maintenance] Server " + serverName + " sedang maintenance. Anda dipindahkan ke Lobby."));
                             } else {
                                 String kickReason = config.getString("maintenance.kick-reason");
                                 player.disconnect(parse(kickReason));
@@ -746,13 +746,13 @@ public class NaturalVelocity {
     public void startCountdown(String serverName, int seconds, com.velocitypowered.api.command.CommandSource source) {
         if (activeCountdownTask != null) {
             activeCountdownTask.cancel();
-            source.sendMessage(Component.text("§c[Maintenance] Countdown sebelumnya dibatalkan karena ada countdown baru."));
+            sendMessage(source, Component.text("§c[Maintenance] Countdown sebelumnya dibatalkan karena ada countdown baru."));
         }
 
         this.countdownServerName = serverName;
         this.countdownSecondsRemaining = seconds;
 
-        source.sendMessage(Component.text("§a[Maintenance] Memulai countdown maintenance untuk " + serverName + " selama " + seconds + " detik."));
+        sendMessage(source, Component.text("§a[Maintenance] Memulai countdown maintenance untuk " + serverName + " selama " + seconds + " detik."));
 
         this.activeCountdownTask = server.getScheduler().buildTask(this, () -> {
             if (countdownSecondsRemaining <= 0) {
@@ -770,13 +770,13 @@ public class NaturalVelocity {
                 
                 if (countdownServerName.equalsIgnoreCase("global")) {
                     for (com.velocitypowered.api.proxy.Player p : server.getAllPlayers()) {
-                        p.sendMessage(announceMsg);
+                        sendMessage(p, announceMsg);
                     }
                 } else {
                     Optional<com.velocitypowered.api.proxy.server.RegisteredServer> target = server.getServer(countdownServerName);
                     if (target.isPresent()) {
                         for (com.velocitypowered.api.proxy.Player p : target.get().getPlayersConnected()) {
-                            p.sendMessage(announceMsg);
+                            sendMessage(p, announceMsg);
                         }
                     }
                 }
@@ -793,7 +793,7 @@ public class NaturalVelocity {
             if (notify) {
                 Component cancelMsg = Component.text("§a[Maintenance] Countdown maintenance untuk " + countdownServerName + " telah dibatalkan.");
                 for (com.velocitypowered.api.proxy.Player p : server.getAllPlayers()) {
-                    p.sendMessage(cancelMsg);
+                    sendMessage(p, cancelMsg);
                 }
             }
             countdownServerName = null;
@@ -829,7 +829,7 @@ public class NaturalVelocity {
             }
 
             for (com.velocitypowered.api.proxy.Player player : server.getAllPlayers()) {
-                if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                if (player.hasPermission("naturalvelocity.maintenance.bypass"))
                     continue;
                 if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
                     continue;
@@ -843,14 +843,14 @@ public class NaturalVelocity {
             if (target.isPresent()) {
                 Optional<com.velocitypowered.api.proxy.server.RegisteredServer> lobby = server.getServer("lobby");
                 for (com.velocitypowered.api.proxy.Player player : target.get().getPlayersConnected()) {
-                    if (player.hasPermission("naturalsmp.maintenance.bypass"))
+                    if (player.hasPermission("naturalvelocity.maintenance.bypass"))
                         continue;
                     if (whitelistedPlayers.contains(player.getUsername().toLowerCase()))
                         continue;
 
                     if (lobby.isPresent()) {
                         player.createConnectionRequest(lobby.get()).fireAndForget();
-                        player.sendMessage(Component.text("§c[Maintenance] Server " + serverName + " sedang maintenance. Anda dipindahkan ke Lobby."));
+                        sendMessage(player, Component.text("§c[Maintenance] Server " + serverName + " sedang maintenance. Anda dipindahkan ke Lobby."));
                     } else {
                         String kickReason = config.getString("maintenance.kick-reason");
                         player.disconnect(parse(kickReason));
@@ -860,7 +860,7 @@ public class NaturalVelocity {
         }
 
         saveMaintenanceState();
-        source.sendMessage(Component.text("§a[Maintenance] Berhasil mengaktifkan maintenance untuk " + serverName + "."));
+        sendMessage(source, Component.text("§a[Maintenance] Berhasil mengaktifkan maintenance untuk " + serverName + "."));
     }
 
     public void deactivateMaintenance(String serverName, com.velocitypowered.api.command.CommandSource source) {
@@ -907,7 +907,7 @@ public class NaturalVelocity {
         }
 
         saveMaintenanceState();
-        source.sendMessage(Component.text("§a[Maintenance] Berhasil menonaktifkan maintenance untuk " + serverName + "."));
+        sendMessage(source, Component.text("§a[Maintenance] Berhasil menonaktifkan maintenance untuk " + serverName + "."));
     }
 
     public Set<String> getMaintenanceServers() {
@@ -939,5 +939,21 @@ public class NaturalVelocity {
             return LegacyComponentSerializer.legacySection().deserialize(processed);
         }
         return MiniMessage.miniMessage().deserialize(processed);
+    }
+
+    public static void sendMessage(com.velocitypowered.api.command.CommandSource source, Component component) {
+        if (source == null) return;
+        if (source instanceof com.velocitypowered.api.proxy.ConsoleCommandSource) {
+            String plainText = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
+            plainText = plainText.replaceAll("(?i)§[0-9a-fk-or]", "").replaceAll("(?i)&[0-9a-fk-or]", "");
+            source.sendMessage(Component.text(plainText));
+        } else {
+            String plain = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
+            if (plain.contains("§")) {
+                source.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(plain));
+            } else {
+                source.sendMessage(component);
+            }
+        }
     }
 }
