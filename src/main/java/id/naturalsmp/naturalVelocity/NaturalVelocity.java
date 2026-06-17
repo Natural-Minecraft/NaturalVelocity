@@ -106,7 +106,18 @@ public class NaturalVelocity {
         // Initialize PacketEvents for HeadMOTD
         initPacketEvents();
 
-        logger.info("NaturalVelocity v2.0 has been initialized! 🚀");
+        server.getConsoleCommandSource().sendMessage(
+                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacyAmpersand().deserialize(
+                    "\n&a===============\n" +
+                    "&a _   _       _                  _     &e __     __   _            _ _ \n" +
+                    "&a| \ | | __ _| |_ _   _ _ __ __ _| |   &e \ \   / /__| | ___   ___(_) |\n" +
+                    "&a|  \| |/ _` | __| | | | '__/ _` | |   &e  \ \ / / _ \ |/ _ \ / __| | |\n" +
+                    "&a| |\  | (_| | |_| |_| | | | (_| | |   &e   \ V /  __/ | (_) | (__| | |\n" +
+                    "&a|_| \_|\__,_|\__|\__,_|_|  \__,_|_|   &e    \_/ \___|_|\___/ \___|_|_|\n" +
+                    "       >> &eNaturalVelocity v2.0 Enabled! <<\n" +
+                    "&a===============\n"
+                )
+        );
 
         // Register Listeners
         this.pingListener = new PingListener(this);
